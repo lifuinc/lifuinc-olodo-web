@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Olodo · Nationwide Educator & Course Creator Portal</title>
+  <meta name="theme-color" content="#1D4F8F">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ============================================== -->
+  <!-- MOBILE TOP HEADER (Screens <= 768px)           -->
+  <!-- ============================================== -->
+  <header class="mobile-topbar">
+    <button class="mobile-hamburger" id="btn-mobile-toggle" aria-label="Open Navigation Menu">
+      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <div class="mobile-brand">
+      <div class="brand-icon">O</div>
+      <span class="mobile-brand-title">Olodo Portal</span>
+    </div>
+    <div id="mobile-user-status">
+      <span class="badge badge-primary" id="mobile-role-pill">Educator</span>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Backdrop Overlay -->
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+  <!-- ============================================== -->
+  <!-- SIDEBAR NAVIGATION                             -->
+  <!-- ============================================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-header">
+      <div class="brand-info">
+        <div class="brand-icon">O</div>
+        <div>
+          <div class="brand-title">Olodo</div>
+          <div class="brand-sub">Educator Portal</div>
+        </div>
+      </div>
+      <button class="drawer-close" id="btn-close-drawer" aria-label="Close navigation">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">TEACHING & ROYALTIES</div>
+
+      <button class="nav-item active" data-tab="tab-overview">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span>Overview & Royalties</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-courses">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        <span>My Question Banks</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-upload">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span>Upload Question Bank</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-handover">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+        <span>Course Handover</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-payouts">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span>Payouts & Bank</span>
+      </button>
+
+      <!-- SUPER ADMIN SUITE (Exclusive to Super Admin) -->
+      <div id="admin-nav-section" style="display: none;">
+        <div class="nav-section-label admin-label">👑 SUPER ADMIN SUITE</div>
+
+        <button class="nav-item admin-nav" data-tab="tab-admin-vetting">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Vetting Queue</span>
+          <span class="badge badge-admin" id="admin-pending-badge" style="margin-left: auto;">0</span>
+        </button>
+
+        <button class="nav-item admin-nav" data-tab="tab-admin-financials">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Financials & Escrow</span>
+        </button>
+
+        <button class="nav-item admin-nav" data-tab="tab-admin-analytics">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Nationwide Analytics</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- User Section -->
+    <div class="user-footer" id="user-footer">
+      <div id="logged-out-view">
+        <button class="btn btn-primary btn-sm" style="width: 100%;" id="btn-show-login">Sign In / Register</button>
+      </div>
+      <div id="logged-in-view" style="display: none;">
+        <div class="user-info">
+          <div class="user-avatar" id="avatar-initial">E</div>
+          <div class="user-details">
+            <div class="user-name" id="display-user-name">Educator</div>
+            <div class="user-role" id="display-user-role">Author</div>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="width: 100%;" id="btn-logout">Sign Out</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================== -->
+  <!-- MAIN CONTENT AREA                              -->
+  <!-- ============================================== -->
+  <main class="content-area">
+
+    <!-- AUTHENTICATION MODAL -->
+    <dialog class="modal" id="auth-modal">
+      <div class="modal-header">
+        <div class="modal-title">Olodo Educator Access</div>
+        <button class="btn btn-outline btn-sm" id="btn-close-auth">✕</button>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">
+        Sign in to upload past questions, manage quizzes for your school/university, and track student royalties.
+      </p>
+
+      <button class="btn btn-outline" style="width: 100%; margin-bottom: 16px;" id="btn-google-auth">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
+        Continue with Google
+      </button>
+
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+        <hr style="flex: 1; border: 0; border-top: 1px solid var(--border);">
+        <span style="font-size: 12px; color: var(--muted);">or with email address</span>
+        <hr style="flex: 1; border: 0; border-top: 1px solid var(--border);">
+      </div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="auth-email" placeholder="e.g. adeleke@unilag.edu.ng or teacher@school.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="At least 6 characters">
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button class="btn btn-primary" style="flex: 1;" id="btn-email-signin">Sign In</button>
+        <button class="btn btn-outline" style="flex: 1;" id="btn-email-signup">Register</button>
+      </div>
+      <div id="auth-error" style="color: var(--danger); font-size: 12px; margin-top: 10px; display: none;"></div>
+    </dialog>
+
+    <!-- ADMIN QUESTION PREVIEW MODAL -->
+    <dialog class="modal" id="preview-modal" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="preview-modal-title">Question Bank Inspection</div>
+          <div style="font-size: 12px; color: var(--muted);" id="preview-modal-sub">Preview questions & explanations</div>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-close-preview">✕</button>
+      </div>
+      <div id="preview-modal-content" style="max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;"></div>
+    </dialog>
+
+    <!-- ============================================== -->
+    <!-- TAB 1: OVERVIEW & REVENUE DASHBOARD            -->
+    <!-- ============================================== -->
+    <section id="tab-overview" class="tab-content">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Educator Royalty Dashboard</h1>
+          <p class="page-desc">Empowering Nigerian teachers & lecturers nationwide to monetize verified question banks.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-quick-upload">+ Upload New Question Bank</button>
+      </div>
+
+      <!-- VETTING STATUS BANNER (Dynamic) -->
+      <div id="vetting-status-banner"></div>
+
+      <!-- REVENUE SHARING HIGHLIGHT BANNER -->
+      <div class="revenue-box">
+        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.85;">Agreed Revenue Sharing Model</div>
+        <h2>70% Educator Pool · 30% Olodo Platform</h2>
+        <p style="font-size: 13.5px; opacity: 0.92; max-width: 680px; line-height: 1.5;">
+          When students subscribe, 70% goes directly to the academic educators. The active teaching teacher or lecturer receives the 80% majority share for maintaining and promoting the pack, while the original creator retains a 20% perpetual passive royalty.
+        </p>
+        <div class="revenue-pill-row">
+          <div class="revenue-pill">🏫 Active Teaching Educator: <b>80% of Pool (₦560 / student pass)</b></div>
+          <div class="revenue-pill">✍️ Original Question Author: <b>20% of Pool (₦140 / student pass)</b></div>
+          <div class="revenue-pill">📱 Olodo Platform Infrastructure: <b>30% (₦300 / pass)</b></div>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid-cols-4">
+        <div class="stat-card">
+          <div class="stat-label">My Question Banks</div>
+          <div class="stat-value" id="stat-total-courses">0</div>
+          <div class="stat-hint">Active subjects/courses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Questions</div>
+          <div class="stat-value" id="stat-total-questions">0</div>
+          <div class="stat-hint">Vetted for offline drills</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Est. Active Royalties</div>
+          <div class="stat-value" style="color: var(--success);" id="stat-earnings">₦0</div>
+          <div class="stat-hint">Current term/semester payout pool</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Payout Status</div>
+          <div class="stat-value" id="stat-payout" style="font-size: 20px;">Ready</div>
+          <div class="stat-hint">Direct NUBAN bank transfer</div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE SIMULATOR & OVERVIEW GRID -->
+      <div class="grid-cols-2">
+        <!-- Interactive Royalty Calculator -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Interactive Royalty Calculator</div>
+            <span class="badge badge-primary">Dynamic Simulator</span>
+          </div>
+          <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px;">
+            Simulate your earnings based on the educational tier and number of enrolled students practicing this session.
+          </p>
+
+          <div class="form-group">
+            <label>Educational Tier</label>
+            <select id="sim-tier-select">
+              <option value="tertiary">Tertiary (Universities & Polytechnics) · ₦1,000 / Course</option>
+              <option value="secondary">Secondary School (JSS / SSS) · ₦1,000 / Term</option>
+              <option value="primary">Primary School (Basic 1 - 6) · ₦800 / Term</option>
+              <option value="national">National Exam Prep (JAMB / WAEC) · ₦1,500 / Pack</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Enrolled Students: <span id="sim-class-size-val" style="color: var(--primary); font-weight: 700;">500 students</span></label>
+            <input type="range" id="sim-class-size" min="20" max="2500" step="20" value="500">
+          </div>
+
+          <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 13px;">Total Student Payments:</span>
+              <b id="sim-total-rev">₦500,000</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--success);">
+              <span style="font-size: 13px;">Active Teaching Educator (80%):</span>
+              <b id="sim-active-cut">₦280,000</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--accent);">
+              <span style="font-size: 13px;">Original Author Royalty (20%):</span>
+              <b id="sim-author-cut">₦70,000</b>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border); color: var(--muted);">
+              <span style="font-size: 13px;">Olodo Platform Fee (30%):</span>
+              <span id="sim-platform-cut">₦150,000</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Question Banks Summary -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">My Live Question Banks</div>
+            <button class="btn btn-outline btn-sm" id="btn-refresh-courses">Refresh</button>
+          </div>
+          <div id="overview-courses-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="color: var(--muted); font-size: 13px; text-align: center; padding: 20px;">
+              Loading question banks from Firebase...
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 2: MY QUESTION BANKS                       -->
+    <!-- ============================================== -->
+    <section id="tab-courses" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Question Bank Management</h1>
+          <p class="page-desc">Manage, edit, update versions, and monitor student drills across educational tiers.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-tab-add-course">+ Create New Bank</button>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="filter-chips" id="courses-filter-chips">
+        <button class="filter-chip active" data-filter="all">All Tiers</button>
+        <button class="filter-chip" data-filter="tertiary">Tertiary / Higher Ed</button>
+        <button class="filter-chip" data-filter="senior_sec">Senior Secondary</button>
+        <button class="filter-chip" data-filter="junior_sec">Junior Secondary</button>
+        <button class="filter-chip" data-filter="primary">Primary School</button>
+        <button class="filter-chip" data-filter="national">National Exams</button>
+      </div>
+
+      <div class="card">
+        <!-- Desktop Table View -->
+        <div class="table-responsive desktop-table-only">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Subject / Course</th>
+                <th>Tier & Institution</th>
+                <th>Level & Period</th>
+                <th>Questions</th>
+                <th>Version</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="courses-table-body">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--muted); padding: 30px;">
+                  No question banks loaded yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Touch Card Feed (Clean on Phones) -->
+        <div class="mobile-card-feed" id="courses-mobile-feed"></div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 3: UPLOAD & BULK PARSER                    -->
+    <!-- ============================================== -->
+    <section id="tab-upload" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Upload Question Bank</h1>
+          <p class="page-desc">Bulk parse past questions, auto-generate options/explanations, and publish to the mobile app.</p>
+        </div>
+        <button class="btn btn-outline" id="btn-load-seed-gst204">Load Sample GST 204 (203 Qs)</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">1. Educational Tier & Metadata</div>
+          <span class="badge badge-primary">Step 1</span>
+        </div>
+
+        <!-- ROW 1: Educational Tier & Institution -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+          <div class="form-group">
+            <label>Educational Tier</label>
+            <select id="course-tier">
+              <option value="tertiary" selected>Tertiary (Universities, Polytechnics, Colleges)</option>
+              <option value="senior_sec">Senior Secondary School (SSS 1 - 3)</option>
+              <option value="junior_sec">Junior Secondary School (JSS 1 - 3)</option>
+              <option value="primary">Primary School (Basic 1 - 6)</option>
+              <option value="national">National Exams (JAMB, WAEC, NECO, BECE, NCEE)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>School / Institution</label>
+            <select id="course-institution">
+              <!-- Dynamically populated or standard list -->
+              <option value="University of Lagos (UNILAG)">University of Lagos (UNILAG)</option>
+              <option value="National Open University of Nigeria (NOUN)">National Open University of Nigeria (NOUN)</option>
+              <option value="Obafemi Awolowo University (OAU)">Obafemi Awolowo University (OAU)</option>
+              <option value="University of Ibadan (UI)">University of Ibadan (UI)</option>
+              <option value="Ahmadu Bello University (ABU)">Ahmadu Bello University (ABU)</option>
+              <option value="Federal University of Technology Akure (FUTA)">Federal University of Technology Akure (FUTA)</option>
+              <option value="University of Nigeria Nsukka (UNN)">University of Nigeria Nsukka (UNN)</option>
+              <option value="Yaba College of Technology (YABATECH)">Yaba College of Technology (YABATECH)</option>
+              <option value="Lagos State University (LASU)">Lagos State University (LASU)</option>
+              <option value="JAMB / UTME National Registry">JAMB / UTME National Registry</option>
+              <option value="WAEC / SSCE National Registry">WAEC / SSCE National Registry</option>
+              <option value="NECO National Registry">NECO National Registry</option>
+              <option value="General Secondary & Primary Registry">General Secondary & Primary Registry</option>
+              <option value="__NEW__">➕ Can't find school? Add New Institution</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- NEW INSTITUTION WORKFLOW (Hidden unless "+ Add New" is picked) -->
+        <div id="custom-institution-box" style="display: none; background: var(--bg); border: 1.5px dashed var(--primary); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-weight: 700; font-size: 13px; color: var(--primary); margin-bottom: 8px;">
+            ➕ Request New Institution / School Registry
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+            <div>
+              <label>Full School Name</label>
+              <input type="text" id="custom-school-name" placeholder="e.g. King's College Lagos / University of Benin">
+            </div>
+            <div>
+              <label>State / Location</label>
+              <input type="text" id="custom-school-state" placeholder="e.g. Lagos State / Edo State">
+            </div>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+            ℹ️ You can proceed to upload questions right away! The school will be verified and added to the master registry by the Olodo Academic Vetting Board.
+          </div>
+        </div>
+
+        <!-- ROW 2: Subject/Department & Class/Level -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 4px;">
+          <div class="form-group">
+            <label id="label-dept">Academic Department / Subject</label>
+            <select id="course-dept">
+              <option value="General Studies">General Studies</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Business Administration">Business Administration</option>
+              <option value="Accounting">Accounting</option>
+              <option value="Economics">Economics</option>
+              <option value="Law">Law</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label id="label-level">Class / Level</label>
+            <select id="course-level">
+              <option value="100 Level">100 Level</option>
+              <option value="200 Level" selected>200 Level</option>
+              <option value="300 Level">300 Level</option>
+              <option value="400 Level">400 Level</option>
+              <option value="500 Level">500 Level (Engineering / Pharmacy / Law)</option>
+              <option value="600 Level">600 Level (Medicine MBBS)</option>
+              <option value="Postgraduate Diploma (PGD)">Postgraduate Diploma (PGD)</option>
+              <option value="Masters (M.Sc / MBA / M.Eng)">Masters (M.Sc / MBA / M.Eng)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label id="label-period">Academic Semester</label>
+            <select id="course-period">
+              <option value="1st Semester" selected>1st Semester</option>
+              <option value="2nd Semester">2nd Semester</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ROW 3: Code, Title, Price, Session -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 4px;">
+          <div class="form-group">
+            <label>Subject / Course Code</label>
+            <input type="text" id="course-code" placeholder="e.g. GST 204 or MTH 101 or SSS2-PHY" value="GST 204">
+          </div>
+          <div class="form-group">
+            <label>Title / Name</label>
+            <input type="text" id="course-title" placeholder="e.g. Entrepreneurship and Innovation" value="Entrepreneurship and Innovation">
+          </div>
+          <div class="form-group">
+            <label>Pass Price (₦)</label>
+            <input type="number" id="course-price" value="1000" min="0">
+          </div>
+          <div class="form-group">
+            <label>Academic Session / Year</label>
+            <input type="text" id="course-session" value="2025/2026">
+          </div>
+        </div>
+      </div>
+
+      <!-- QUESTION TEXTAREA & BULK PARSER -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">2. Paste Questions or Upload File</div>
+          <div style="display: flex; gap: 8px;">
+            <input type="file" id="file-upload" accept=".txt,.csv,.json" style="display: none;">
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('file-upload').click()">📁 Load .txt / .csv</button>
+          </div>
+        </div>
+
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.5;">
+          Supported formats:
+          <br><b>Format A:</b> <code>Group|Question|Answer|[Explanation]</code> (Options auto-generated from group pool).
+          <br><b>Format B:</b> <code>Question|Option A|Option B|Option C|Option D|Correct Answer|Explanation</code>
+        </p>
+
+        <textarea id="raw-question-text" placeholder="Paste questions here... e.g.&#10;P|______ views entrepreneurship as “self-employment of any sort”.|Cantillon (circa 1730)|Cantillon wrote this in circa 1730.&#10;P|In 1934, ______ equated entrepreneurship with innovation.|Joseph Schumpeter|Schumpeter introduced the concept of creative destruction."></textarea>
+
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+          <button class="btn btn-outline" id="btn-parse-dryrun">🔍 Check & Test Parse</button>
+          <button class="btn btn-primary" id="btn-publish-firebase">🚀 Publish / Submit for Vetting</button>
+        </div>
+
+        <!-- Parse Preview Result -->
+        <div id="parse-results" style="margin-top: 20px; display: none;"></div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 4: SUBJECT / COURSE HANDOVER               -->
+    <!-- ============================================== -->
+    <section id="tab-handover" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Course Handover & Succession</h1>
+          <p class="page-desc">Hand over coordination to an incoming colleague to assign them the 80% active teacher royalty.</p>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 600px;">
+        <div class="card-header">
+          <div class="card-title">Hand Over Academic Coordination</div>
+          <span class="badge badge-accent">Session Transition</span>
+        </div>
+
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5;">
+          When academic sessions or teaching rotations change, assign your colleague's email.
+          The incoming educator receives the <b>80% active coordinator share</b> for teaching and promoting the pack, while you retain the <b>20% perpetual author royalty</b>.
+        </p>
+
+        <div class="form-group">
+          <label>Select Question Bank</label>
+          <select id="handover-course-select">
+            <option value="">Select a course / subject...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Successor Educator Email</label>
+          <input type="email" id="handover-successor-email" placeholder="e.g. okafor@unilag.edu.ng or teacher@school.com">
+        </div>
+
+        <div class="form-group">
+          <label>Successor Full Name</label>
+          <input type="text" id="handover-successor-name" placeholder="e.g. Dr. C. Okafor">
+        </div>
+
+        <div class="form-group">
+          <label>New Academic Session / Period</label>
+          <input type="text" id="handover-new-session" value="2026/2027">
+        </div>
+
+        <div class="alert alert-warning">
+          ℹ️ Once transferred, the successor receives 80% (₦560 per student pass), while your account continues receiving 20% (₦140 per student pass) passively.
+        </div>
+
+        <button class="btn btn-primary" id="btn-confirm-handover" style="width: 100%;">Transfer Coordination</button>
+        <div id="handover-result" style="margin-top: 12px; font-size: 13px;"></div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 5: PAYOUTS & BANK SETUP                    -->
+    <!-- ============================================== -->
+    <section id="tab-payouts" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Payouts & Nigerian Bank Account</h1>
+          <p class="page-desc">Automated direct disbursements to your commercial bank account.</p>
+        </div>
+      </div>
+
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Settlement Account</div>
+            <span class="badge badge-success">Paystack Direct</span>
+          </div>
+
+          <div class="form-group">
+            <label>Bank Name</label>
+            <select id="bank-name">
+              <option value="Access Bank">Access Bank</option>
+              <option value="GTBank">Guaranty Trust Bank (GTBank)</option>
+              <option value="First Bank of Nigeria">First Bank of Nigeria</option>
+              <option value="Zenith Bank">Zenith Bank</option>
+              <option value="United Bank for Africa">United Bank for Africa (UBA)</option>
+              <option value="Kuda Bank">Kuda Bank</option>
+              <option value="Stanbic IBTC">Stanbic IBTC</option>
+              <option value="Fidelity Bank">Fidelity Bank</option>
+              <option value="OPay">OPay Digital Services</option>
+              <option value="Palmpay">Palmpay</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>10-Digit NUBAN Account Number</label>
+            <input type="text" id="bank-account-num" placeholder="0123456789" maxlength="10">
+          </div>
+
+          <div class="form-group">
+            <label>Account Holder Name</label>
+            <input type="text" id="bank-account-name" placeholder="e.g. Dr. Olusegun Adeleke">
+          </div>
+
+          <button class="btn btn-success" id="btn-save-bank" style="width: 100%;">Save Settlement Details</button>
+          <div id="bank-save-msg" style="margin-top: 10px; font-size: 13px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Disbursement Schedule</div>
+            <span class="badge badge-primary">Bi-Weekly</span>
+          </div>
+          <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+            • Student subscriptions are held in platform escrow and settled every 14 days directly to your verified NUBAN account.
+            <br>• Minimum payout threshold: <b>₦5,000</b>.
+            <br>• Real-time statement records are logged per student enrollment and verifiable on your dashboard.
+          </p>
+
+          <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-top: 16px;">
+            <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Lifetime Paid Out</div>
+            <div style="font-size: 24px; font-weight: 800; font-family: Georgia, serif; color: var(--success); margin: 4px 0;">₦0.00</div>
+            <div style="font-size: 12px; color: var(--muted);">Next payout run: End of current academic term/semester</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SUPER ADMIN TAB 1: FACULTY & SCHOOL VETTING    -->
+    <!-- ============================================== -->
+    <section id="tab-admin-vetting" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Faculty & School Vetting Queue</h1>
+          <p class="page-desc">Manual verification for educators and newly requested institutions nationwide.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline btn-sm" id="btn-admin-refresh-vetting">🔄 Refresh Queue</button>
+        </div>
+      </div>
+
+      <!-- Admin Stat Row -->
+      <div class="grid-cols-4">
+        <div class="stat-card">
+          <div class="stat-label">Pending Verification</div>
+          <div class="stat-value" style="color: var(--accent);" id="admin-stat-pending">0</div>
+          <div class="stat-hint">Educators awaiting review</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Verified Faculty</div>
+          <div class="stat-value" style="color: var(--success);" id="admin-stat-verified">0</div>
+          <div class="stat-hint">Active content creators</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">School Requests</div>
+          <div class="stat-value" id="admin-stat-schools">0</div>
+          <div class="stat-hint">New institutions added</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending Question Packs</div>
+          <div class="stat-value" style="color: var(--primary);" id="admin-stat-packs">0</div>
+          <div class="stat-hint">Ready for live push</div>
+        </div>
+      </div>
+
+      <!-- Vetting Filter Chips -->
+      <div class="filter-chips" id="vetting-filter-chips">
+        <button class="filter-chip active" data-vet-filter="pending">Pending Review</button>
+        <button class="filter-chip" data-vet-filter="verified">Verified Educators</button>
+        <button class="filter-chip" data-vet-filter="schools">Institution Requests</button>
+        <button class="filter-chip" data-vet-filter="all">All Records</button>
+      </div>
+
+      <!-- Educators Vetting Table / Card Feed -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Educator Verification Applications</div>
+          <span class="badge badge-admin">Super Admin Authorization</span>
+        </div>
+
+        <div class="table-responsive desktop-table-only">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Educator</th>
+                <th>Institution & Tier</th>
+                <th>Department / Subject</th>
+                <th>Questions</th>
+                <th>Status</th>
+                <th>Registered</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="vetting-table-body">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--muted); padding: 30px;">
+                  No pending educator applications in queue.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mobile-card-feed" id="vetting-mobile-feed"></div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SUPER ADMIN TAB 2: FINANCIALS & ESCROW LEDGER   -->
+    <!-- ============================================== -->
+    <section id="tab-admin-financials" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Platform Financials & Escrow Ledger</h1>
+          <p class="page-desc">Track nationwide gross subscriptions, 30% platform net, 70% educator pool, and Paystack settlement.</p>
+        </div>
+        <button class="btn btn-admin" id="btn-export-paystack-csv">📥 Export Paystack Bulk Settlement CSV</button>
+      </div>
+
+      <div class="grid-cols-4">
+        <div class="stat-card">
+          <div class="stat-label">Gross Platform Inflows</div>
+          <div class="stat-value" id="fin-gross-inflow">₦0</div>
+          <div class="stat-hint">All student subscriptions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Platform 30% Net</div>
+          <div class="stat-value" style="color: var(--primary);" id="fin-platform-net">₦0</div>
+          <div class="stat-hint">Olodo revenue margin</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Educator 70% Escrow</div>
+          <div class="stat-value" style="color: var(--success);" id="fin-escrow-pool">₦0</div>
+          <div class="stat-hint">Active & author pool</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Next Bi-Weekly Payout</div>
+          <div class="stat-value" style="color: var(--accent);" id="fin-pending-payout">₦0</div>
+          <div class="stat-hint">Due for Paystack bulk transfer</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Educator Payout Ledger (Paystack Direct Settlement)</div>
+          <span class="badge badge-success">80% Active / 20% Author Split</span>
+        </div>
+
+        <div class="table-responsive desktop-table-only">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Educator</th>
+                <th>School / Institution</th>
+                <th>Total Passes</th>
+                <th>Active Cut (80%)</th>
+                <th>Author Cut (20%)</th>
+                <th>Total Payable</th>
+                <th>Bank Details</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-table-body">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--muted); padding: 30px;">
+                  No transactions logged for current cycle.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mobile-card-feed" id="ledger-mobile-feed"></div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SUPER ADMIN TAB 3: NATIONWIDE ANALYTICS        -->
+    <!-- ============================================== -->
+    <section id="tab-admin-analytics" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">Nationwide Platform Analytics</h1>
+          <p class="page-desc">Real-time educational tier breakdown, school adoption, and student drill metrics.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-refresh-analytics">🔄 Refresh Analytics</button>
+      </div>
+
+      <div class="grid-cols-4">
+        <div class="stat-card">
+          <div class="stat-label">Total Questions Nationwide</div>
+          <div class="stat-value" id="ana-total-questions">0</div>
+          <div class="stat-hint">In offline drill banks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Institutions</div>
+          <div class="stat-value" id="ana-active-schools">0</div>
+          <div class="stat-hint">Universities & Schools</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Explanation Quality Index</div>
+          <div class="stat-value" style="color: var(--success);" id="ana-quality-index">0%</div>
+          <div class="stat-hint">Banks with verified notes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Free-to-Paid Conversion</div>
+          <div class="stat-value" style="color: var(--primary);" id="ana-conv-rate">0%</div>
+          <div class="stat-hint">Trial drills to semester passes</div>
+        </div>
+      </div>
+
+      <div class="grid-cols-2">
+        <!-- Educational Tier Breakdown -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Educational Tier Distribution</div>
+            <span class="badge badge-primary">Nationwide</span>
+          </div>
+          <div id="analytics-tier-breakdown" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="color: var(--muted); font-size: 13px; text-align: center; padding: 20px;">Computing tier distribution...</div>
+          </div>
+        </div>
+
+        <!-- Top Question Banks Leaderboard -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Top Subject / Course Banks</div>
+            <span class="badge badge-success">Most Active</span>
+          </div>
+          <div id="analytics-courses-leaderboard" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="color: var(--muted); font-size: 13px; text-align: center; padding: 20px;">Computing leaderboard...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

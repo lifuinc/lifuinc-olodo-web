@@ -1,0 +1,203 @@
+P|______ observes that scholars had not agreed on definitions of entrepreneurship.|Putari (2006)
+P|______ views entrepreneurship as “self-employment of any sort”.|Cantillon (circa 1730)
+P|In 1934, ______ equated entrepreneurship with innovation in a business context.|Joseph Schumpeter
+P|______ views entrepreneurship as identifying opportunities within the economic system.|Penrose (1963)
+P|______ sees entrepreneurship as activities to create an enterprise where markets are not well established.|Leibenstein (1968, 1979)
+P|______ conceives entrepreneurship as the creation of new organizations.|Gartner (1988)
+P|______ defines entrepreneurship as the willingness and ability to seek investment opportunities and run an enterprise.|Okpara (2000)
+P|______ regards entrepreneurship as seeing and evaluating business opportunities and gathering resources.|Nwachukwu (1990)
+P|______ views entrepreneurs as individuals who predict and act upon change within markets.|Knight (1921)
+P|Who defines the entrepreneur as combining input factors innovatively so value exceeds their cost?|Quick MBA (2010)
+P|Who popularized the term “entrepreneur” in England?|James Stuart Mill
+P|According to ______, the high need for achievement drives people to entrepreneurship.|McClelland
+P|______ considers withdrawal of status respect the trigger for changes in personality formation.|Hagen
+P|Locus of control was first introduced by ______.|Julian Rotter
+P|The psycho-dynamic model was propounded by ______.|Kets de Vries
+P|______ opined that companies that do not keep up may go the way of the dinosaur.|Stoner et al. (2009)
+E|Who created the Dangote Group?|Aliko Dangote
+E|Who is regarded as the ‘King’ of the transport industry and founded Chisco?|Chidi Anyaegbu
+E|Who established Dimaps Batteries?|Chris Ejiofor
+E|Who created Eleganza Industries?|Razaq Okoya
+E|Who won the Second National Operator (SNO) licence bid in 2002?|Mike Adenuga Junior
+E|Who established DMT Mobile Toilets in Lagos?|Durojaiye Isaac
+Y|Schumpeter equated entrepreneurship with innovation in which year?|1934
+Y|Economists took an interest in entrepreneurs as early as ______.|1755
+Y|Aliko Dangote was born in ______.|1957
+Y|Mike Adenuga Junior was born in ______.|1953
+Y|DMT Mobile Toilets was established in ______.|1999
+Y|The Federal Government established Industrial Development Centres in ______.|1964
+Y|Locus of control was introduced in the ______.|1950s
+N|Hagen identifies ______ types of events that produce status withdrawal.|four
+N|Classical theorists articulated ______ modes of production.|three
+N|Holt (1992) says the creative process has ______ stages.|five
+T|Entrepreneurship stems from which French word?|entreprendre
+T|The French verb entreprendre means ______.|to undertake
+T|Entrepreneurs within an organization are called ______.|Intrapreneurs
+T|Intrapreneurship is also called ______.|corporate entrepreneurship
+T|The central difference between entrepreneurs and intrapreneurs is ______.|the setting in which they work
+T|Classical theory, Neo-classical and ______ make up the economic theory.|Austrian Market Process
+T|Classical theorists named land, capital and ______ as modes of production.|labour
+T|Schumpeter described entrepreneurship as a ______ of market-based systems.|driver
+T|Stable qualities a person shows in most situations are called ______.|Personality traits
+T|A belief about whether outcomes depend on our actions or outside events is ______.|Locus of control
+T|People with an external locus of control believe life’s events result from ______.|chance, luck or fate
+T|Which model is concerned with a ‘troubled childhood’?|Psycho-dynamic Model
+T|Sociological models with empirical support: inheritance of enterprise culture, ethnicity and ______.|social marginality
+T|What measures pride, loyalty and cohesiveness in groups and families?|In-group collectivism
+T|What measures how far members expect power to be unequally distributed?|Power distance
+T|Demand that is backed up by purchasing power is ______.|effective demand
+T|The ability to bring something new into existence is ______.|Creativity
+T|The conversion of creative ideas into marketplace reality is ______.|Innovation
+T|Which is the most common form of innovation?|Incremental innovation
+T|Which innovation is also known as stealth innovation?|Disruptive innovation
+T|An exclusive right granted for an invention is a ______.|patent
+T|Gathering information about prospects of a new business by visiting sites is ______.|environmental scanning
+A|ILO stands for ______.|Intended Learning Outcomes
+A|CBA stands for ______.|Computer Based Assessment
+A|AMP stands for ______.|Austrian Market Process
+A|SNO stands for ______.|Second National Operator
+A|SME stands for ______.|Small and Medium Enterprises
+A|SWOT stands for ______.|Strengths, Weaknesses, Opportunities and Threats
+A|IPR stands for ______.|Intellectual Property Rights
+A|RAWDP stands for ______.|Rural Africa Water Development Project
+B|True or false: Everyone doing business is an entrepreneur.|False
+B|True or false: Entrepreneurship is a very risky venture.|True
+B|True or false: An entrepreneur must have good human relations.|True
+B|True or false: Not all technology can drive a business.|True
+B|True or false: Employee cost is more than pay.|True
+B|True or false: Rushing into a market without experience can be fatal.|True
+B|True or false: Researchers argue entrepreneurial activity should be higher in low power distance countries.|True
+B|True or false: Every profession has its culture.|True
+B|True or false: Environmental factors play a vital role in the survival of businesses.|True
+B|True or false: An entrepreneur who communicates well with customers, employees, suppliers and creditors is more likely to succeed.|True
+B|True or false: The entrepreneur must have self-confidence and believe in him/herself.|True
+B|True or false: An effective opportunity and threat analysis is advantageous to the entrepreneur.|True
+B|True or false: Experience in a related business before start-up is positively associated with success.|True
+B|True or false: Entrepreneurs should be vocal about favourable policies and regulations.|True
+P|______ views entrepreneurs as change agents.|Putari (2006)
+P|______ conceives the entrepreneur as the innovator carrying out new combinations.|Schumpeter (1934)
+P|______ saw the entrepreneur as the “agent who buys means of production at certain prices”.|Cantillon (circa 1730)
+P|Which French economist used the term entrepreneur in business in the early 18th century?|Richard Cantillon
+P|According to ______, an entrepreneur is a dynamic person who takes calculated risks.|David McClelland (1961)
+P|According to ______, economic incentives are the main drive for entrepreneurial activities.|G.F. Papanek and J.R. Harris
+P|______ says entrepreneurial culture can be rooted in society through the family, education, existing businesses and authorities.|Fortin (2003)
+P|______ lists attitudes that favour an entrepreneurial culture.|J. M. Toulouse (1990)
+P|______ says entrepreneurship is a value in itself for Americans.|Sexton & Bowman (1986)
+P|______ regards self-confidence, multi-skill and results-orientation as major entrepreneurial characteristics.|DiMasi (2010)
+P|______ believes entrepreneurial characteristics include seriousness, planning ability, prudence and team work.|Stephenson (2010)
+P|______ showed individualism influences the type, not the level, of innovation strategy.|Shane et al. (1995)
+P|______ describe an intrapreneur as a manager, scientist or researcher working inside an organization.|Jones, George and Hill (2000)
+P|______ views organizational resources as the physical and human resources used as inputs.|Kazmi (1999)
+P|______ define innovation as the specific instrument of entrepreneurs.|Zimmerer, Scarborough and Wilson (2008)
+P|______ listed five functions of a woman entrepreneur.|Frederick Harbison (1956)
+P|Who said “The art of prophecy is very difficult, especially with respect to the future”?|Mark Twain
+P|Who defined technology as the systematic application of scientific knowledge to practical tasks?|J.K. Galbraith
+P|Who is regarded as the father of innovation?|Joseph Schumpeter
+P|______ defined the entrepreneur as someone who imagines, develops and realizes a vision.|Fillion
+P|______ is the first major theorist to put the human agent at the centre of economic development.|Schumpeter
+P|Which theorist added the changes an entrepreneur brings, such as expanded goods and new markets?|Wilken
+E|Who established Elbe Pharma, which markets Amalar anti-malaria tablets?|Paul Okafor
+E|Who comes from the royal family in Ondo State?|Obateru Akinruntan
+E|Who is a social entrepreneur focused on tourism development in Africa?|Cletus Olebune
+E|Who is from Igbere and owns the Slok Group of Companies?|Orji Kalu
+E|Who sells the slogan “Shit business is Good Business”?|Durojaiye Isaac
+E|Whose father was a gynecologist and mother a nurse?|Bello-Osagie Hakeem
+Y|Hussan Okoya was born on June 8 of which year?|1935
+Y|In which year did NASA’s Ames Research Center try to improve aircraft cushion safety?|1966
+Y|In the early ______ century, Frenchmen who led military expeditions were called entrepreneurs.|16th
+Y|In the early ______ century, Cantillon applied the term entrepreneur to business.|18th
+Y|Trademark rights are usually granted for ______ years.|7 to 20
+Y|Reynolds (1991) identified ______ social contexts related to entrepreneurial opportunity.|four
+Y|At what age did Bello-Osagie Hakeem move with his parents to England?|three
+T|Many people start businesses that do not survive because of ______.|lack of understanding of how businesses are created
+T|Entrepreneurship refers to the processes of establishing, nurturing and sustaining a ______.|business enterprise
+T|Entrepreneurs are usually passionate, buoyant and ______.|highly self-motivated
+T|The entrepreneur is a ______.|visionary
+T|An entrepreneur must have a good ______ system.|feedback
+T|Key personality factors for entrepreneurs: emotional stability, good inter-personal relations, consideration and ______.|tactfulness
+T|Successful entrepreneurs take ______ risks.|calculated
+T|Entrepreneurs need to be ______.|cool, calm and collected
+T|The psychologist sees entrepreneurs as driven by internal, personal attributes and ______.|traits
+T|Sociologists argue entrepreneurship emerges under a specific ______.|social culture
+T|Entrepreneurship is inhibited by the social system, which denies opportunities for ______ facilities.|creative
+T|When an individual sees that a market is out of ______, he may buy at the prevailing price and sell higher.|equilibrium
+T|The perception that one’s values are not respected by groups one respects is ______.|Status withdrawal
+T|Which model emerged from criticisms of the classical model and assumed a closed economic system?|Neo-classical
+T|The economic school weighs economic conditions and incentives to reach a ______ equation.|risk-reward
+T|What is the fifth psychological theory of entrepreneurship?|Risk taking propensity
+T|The need for achievement theory is criticized as more applicable to ______ culture.|western
+T|People who succeed in business are ______ risk takers.|moderate
+T|The third major entrepreneurship theory is the ______.|sociological theory
+T|The sociological enterprise focuses on the ______.|social context
+T|The social network builds bonds that promote trust and not ______.|opportunism
+T|Which theory says people who feel a mismatch between their attributes and their role will reconstruct their social reality?|Social marginality model
+T|People not completely part of their adopted society and free of its value restrictions are called ______.|Marginal men
+T|Ethnic groups overrepresented in entrepreneurship include ______.|Ibos in Nigeria, Kikuyus in Kenya and Chagga in Tanzania
+T|Culture is a hot ______ among corporate and entrepreneurial companies.|slogan
+T|Culture serves to ______ new employees.|socialize
+T|Culture matters to ventures because it ______.|institutionalizes the values of its founders
+T|In which country did the HuJi system produce many necessity-driven entrepreneurs?|China
+T|Which cultures encourage high performance, uniqueness and investing for the future?|Modernistic cultures
+T|Collectivism helps entrepreneurship because ______.|collectivistic societies provide more social support and resources
+T|Power distance can help entrepreneurship because ______.|the only way to be independent is to be an entrepreneur
+T|Which dimension covers planning, investing in the future and delaying gratification?|Future orientation
+T|The Nigerian economy is primarily a ______ economy.|mixed
+T|Turning a new idea into a product or service that creates wealth and jobs is ______.|Entrepreneurship
+T|Entrepreneurs must develop skills in leadership, teamwork, negotiation and ______.|communication
+T|The existence of entrepreneurial qualities, willingness and motivation to start ventures is ______.|Entrepreneurial capacity
+T|Training and ______ can be a big advantage for new ventures.|education
+T|The heart of leadership is ______.|learning first and doing before leading
+T|A psychological barrier closely related to fear of failure is ______.|aversion to risk
+T|The surroundings within which a business exists make up the ______.|business environment
+T|Factors the entrepreneur can control, at least in the short run, are ______.|internal environmental factors
+T|Factors the entrepreneur cannot control but that affect survival are ______.|external environmental factors
+T|Inherent limitations that create strategic disadvantages are ______.|Weaknesses
+T|Inherent capabilities that give strategic advantage are ______.|Strengths
+T|Negligence to environmental factors can lead to ______.|business failure
+T|Activities aimed at gaining returns from a discovered opportunity are ______.|Opportunity exploitation
+T|Which activity is essential to businesses throughout their lifespan?|Planning
+T|A competitor’s poor performance could create ______ for your product.|an opportunity
+T|Ideas are cheap, but ______ have value.|opportunities
+T|Investors do not fund ideas; they back ______.|opportunities
+T|Which creative-process stage occurs when the idea surfaces as a realistic creation?|Illumination
+T|Which innovation changes core design of components but not the whole architecture?|Modular innovation
+T|Which innovation brings a new dominant design and new core concepts?|Radical innovation
+T|Which innovativeness is concerned with novelty in management systems and structure?|Administrative innovativeness
+T|Which phase weighs an idea’s costs and benefits?|Advocacy and Screening
+T|The process of gaining overall company acceptance of an innovation is ______.|diffusion
+T|Creations of the mind such as inventions and designs are ______.|Intellectual property
+T|The legal term for creators’ rights over literary and artistic works is ______.|Copyright
+T|Which change provides the basis for new processes, products and markets?|Technological change
+T|Machines (hard) plus scientific thinking (soft) used to solve problems is ______.|Technology
+T|Technology designed for the community’s environmental, ethical and cultural needs is ______.|Appropriate technology
+T|Documentation started through means of ______.|writing
+T|The creation of a product or process for the first time is ______.|Invention
+T|An inventor does technical work; an ______ turns it into economic performance.|entrepreneur
+T|Someone who applies inventions to make new combinations is ______.|An innovator
+T|Professionals investing alongside management in fast-growing young companies provide ______.|Venture capital
+T|Debt is lower-risk capital because ______.|it is repaid on a set schedule of principal and interest
+T|Which statement shows a venture’s cash management strategy?|Cash flow statement
+T|The people side of change is managed through ______.|Change management
+T|Deciding who will lead the family company next generation is ______.|Succession planning
+T|Transferring ownership’s financial and tax aspects is ______.|Estate planning
+T|Value created when resources are combined to improve lives in society is ______.|Social value
+T|Value created by adding inputs to a resource to raise market value is ______.|Economic value
+T|Visionaries who solve social problems with business ideas are ______.|Social entrepreneurs
+T|Exclusive local distribution rights in return for royalties is a ______.|franchise
+T|Newspapers, television and the Internet are examples of ______.|mass media
+T|Which technique generates many product ideas?|Brainstorming
+T|A business owned, financed and managed by one person is a ______.|Sole proprietorship
+T|A technological innovator who combines high technology with business is a ______.|Technopreneur
+T|Idea generation in new product development is often called the ______.|fuzzy front end
+A|GDP stands for ______.|Gross Domestic Products
+A|NDE stands for ______.|National Directorate of Employment
+A|CIL stands for ______.|Communications Investment Limited
+A|MIS stands for ______.|Management Information System
+A|SROI stands for ______.|Social return on investment
+A|SBA stands for ______.|Small Business Administration
+A|AFN stands for ______.|additional funds needed
+A|FIRO stands for ______.|Federal Institute of Industrial Research
+A|PRODA stands for ______.|Project Development Institute
+A|NCAER stands for ______.|National Council of Applied Economic Research
+A|CII stands for ______.|Confederation of Indian Industries
+A|LOC stands for ______.|Locus of control

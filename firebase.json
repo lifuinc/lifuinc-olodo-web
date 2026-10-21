@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "server.ps1",
+      "run_portal.bat",
+      "deploy_to_firebase.bat"
+    ]
+  }
+}
