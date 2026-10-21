@@ -453,8 +453,12 @@
             <input type="text" id="course-title" placeholder="e.g. Entrepreneurship and Innovation" value="Entrepreneurship and Innovation">
           </div>
           <div class="form-group">
-            <label>Pass Price (₦)</label>
-            <input type="number" id="course-price" value="1000" min="0">
+            <label>Student Pass Price (Standard)</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="text" id="course-price" value="₦1,000" readonly style="background: var(--bg); font-weight: 700; color: var(--primary); cursor: not-allowed;">
+              <span class="badge badge-success" style="white-space: nowrap;">70% Pool Share</span>
+            </div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Universal standard price across all primary, secondary & tertiary packs.</div>
           </div>
           <div class="form-group">
             <label>Academic Session / Year</label>

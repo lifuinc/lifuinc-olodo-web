@@ -310,8 +310,8 @@ function initTierControls() {
       .map((p, idx) => `<option value="${p}" ${idx === 0 ? "selected" : ""}>${p}</option>`)
       .join("");
 
-    // Update default pass price
-    $("#course-price").value = cfg.defaultPrice;
+    // Standard pass price
+    $("#course-price").value = "₦1,000";
   }
 
   tierSelect?.addEventListener("change", updateTierFields);
@@ -693,7 +693,7 @@ window.editCourse = function (docId) {
   $("#course-level").value = found.level || "";
   $("#course-period").value = found.period || found.semester || "";
   $("#course-session").value = found.academicSession || "2025/2026";
-  $("#course-price").value = found.singleCoursePrice || 1000;
+  $("#course-price").value = "₦1,000";
 
   $('[data-tab="tab-upload"]')?.click();
 };
@@ -836,7 +836,7 @@ function initParser() {
     const period = $("#course-period").value;
     const code = $("#course-code").value.trim();
     const title = $("#course-title").value.trim();
-    const price = parseInt($("#course-price").value || "1000", 10);
+    const price = 1000; // Platform standard: ₦1,000 across all educational tiers
     const session = $("#course-session").value.trim() || "2025/2026";
 
     // Clean Document ID based on Tier, Institution, Level, Period, Code
