@@ -470,24 +470,136 @@
       <!-- QUESTION TEXTAREA & BULK PARSER -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title">2. Paste Questions or Upload File</div>
+          <div class="card-title">2. Create & Format Question Bank</div>
           <div style="display: flex; gap: 8px;">
             <input type="file" id="file-upload" accept=".txt,.csv,.json" style="display: none;">
-            <button class="btn btn-outline btn-sm" onclick="document.getElementById('file-upload').click()">📁 Load .txt / .csv</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('file-upload').click()">📁 Load .txt / .csv / .json</button>
           </div>
         </div>
 
-        <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.5;">
-          Supported formats:
-          <br><b>Format A:</b> <code>Group|Question|Answer|[Explanation]</code> (Options auto-generated from group pool).
-          <br><b>Format B:</b> <code>Question|Option A|Option B|Option C|Option D|Correct Answer|Explanation</code>
-        </p>
+        <!-- Mode Toggle Tabs -->
+        <div style="display: flex; gap: 10px; margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-tab-ai-generator" style="display: flex; align-items: center; gap: 6px; font-weight: 700;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            ✨ AI NOUN CBT Generator (Fill-in-Blanks)
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-tab-manual-paste" style="display: flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            📝 Standard Paste / Pipe Formats
+          </button>
+        </div>
 
-        <textarea id="raw-question-text" placeholder="Paste questions here... e.g.&#10;P|______ views entrepreneurship as “self-employment of any sort”.|Cantillon (circa 1730)|Cantillon wrote this in circa 1730.&#10;P|In 1934, ______ equated entrepreneurship with innovation.|Joseph Schumpeter|Schumpeter introduced the concept of creative destruction."></textarea>
+        <!-- TAB CONTENT 1: AI CBT GENERATOR -->
+        <div id="ai-generator-panel" style="display: block;">
+          <div style="background: var(--primary-light); border: 1.5px solid var(--primary); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+              <div style="font-weight: 700; font-size: 14px; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                <span>🤖 NOUN CBT Exam Generator (Batched AI)</span>
+                <span class="badge badge-primary">Gemini 2.0 Flash</span>
+              </div>
+              <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Get Free Google AI Studio API Key ↗</a>
+            </div>
+            <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 12px; line-height: 1.45;">
+              Paste your raw fill-in-the-blank or Q&A lines directly from past exams or TMA summaries. The AI processes them in <b>safe batches of 10</b>, preserves the <b>exact verbatim question and answer</b>, generates <b>3 plausible distractors</b>, and provides explanations.
+            </p>
 
-        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 12px; font-weight: 700;">Google Gemini API Key</label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="password" id="ai-gemini-key" placeholder="Paste your Gemini API key (AIzaSy...)" style="background: #fff; font-family: monospace; font-size: 12px;">
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-key-visibility" title="Show/Hide Key">👁️</button>
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 12px; font-weight: 700;">Course Context & Subject Hint (Optional)</label>
+                <input type="text" id="ai-course-context" placeholder="e.g. GST 204: Peace Studies and Conflict Resolution" style="background: #fff; font-size: 12px;">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <span>Paste Raw Q&A or Fill-in-the-Blank Entries:</span>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-load-sample-noun" style="font-size: 11px; padding: 2px 8px;">Load Sample NOUN GST Entries</button>
+            </label>
+            <textarea id="ai-raw-input" rows="8" placeholder='Paste your raw entries here, e.g.:
+
+"_____ inferred that without conflict we cannot have change"
+"Ross (1993)"
+
+"Conflict can be defined as an expressed struggle between at least two _____ parties"
+"interdependent"
+
+"_____ defined conflict as a struggle over values or claims to status and power"
+"Coser (1956)"' style="font-family: monospace; font-size: 13px; line-height: 1.4;"></textarea>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+              <label style="margin: 0; font-weight: 600;">Batch Size:</label>
+              <select id="ai-batch-size" style="width: auto; padding: 6px 10px; font-size: 13px;">
+                <option value="5">5 questions / batch</option>
+                <option value="10" selected>10 questions / batch (Recommended)</option>
+                <option value="15">15 questions / batch</option>
+              </select>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="btn-start-ai-generation" style="padding: 10px 18px; font-weight: 700;">
+              ⚡ Start AI Batch Generation
+            </button>
+            <button type="button" class="btn btn-outline" id="btn-stop-ai-generation" style="display: none; color: var(--danger); border-color: var(--danger);">
+              ⏹️ Stop Generation
+            </button>
+          </div>
+
+          <!-- Live Progress Container -->
+          <div id="ai-progress-box" style="display: none; margin-top: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+              <span id="ai-progress-status">Preparing batches...</span>
+              <span id="ai-progress-percent">0%</span>
+            </div>
+            <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-bottom: 8px;">
+              <div id="ai-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #1D4F8F, #00C2FF); transition: width 0.3s ease;"></div>
+            </div>
+            <div id="ai-progress-log" style="font-size: 12px; color: var(--muted); font-family: monospace;"></div>
+          </div>
+
+          <!-- Interactive Review & Editing Deck -->
+          <div id="ai-review-deck" style="display: none; margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px solid var(--border);">
+              <div>
+                <div style="font-weight: 800; font-size: 16px; color: var(--primary);">Interactive Question Review Deck</div>
+                <div style="font-size: 12.5px; color: var(--muted);" id="ai-deck-count">0 questions generated. Review distractors and verbatim text before publishing.</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-ai-add-question">➕ Add Custom Question</button>
+                <button type="button" class="btn btn-success btn-sm" id="btn-ai-apply-to-portal" style="font-weight: 700; background: var(--success); color: #fff;">
+                  ✅ Apply to Question Bank & Prepare for Vetting
+                </button>
+              </div>
+            </div>
+
+            <!-- List of Question Cards -->
+            <div id="ai-question-cards-list" style="display: flex; flex-direction: column; gap: 14px; max-height: 600px; overflow-y: auto; padding-right: 4px;"></div>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT 2: MANUAL / STANDARD FORMAT -->
+        <div id="manual-paste-panel" style="display: none;">
+          <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.5;">
+            Supported formats:
+            <br><b>Format A:</b> <code>Group|Question|Answer|[Explanation]</code> (Options auto-generated from group pool).
+            <br><b>Format B:</b> <code>Question|Option A|Option B|Option C|Option D|Correct Answer|Explanation</code>
+            <br><b>Format C:</b> Strict JSON array.
+          </p>
+
+          <textarea id="raw-question-text" rows="8" placeholder="Paste questions here... e.g.&#10;P|______ views entrepreneurship as “self-employment of any sort”.|Cantillon (circa 1730)|Cantillon wrote this in circa 1730.&#10;P|In 1934, ______ equated entrepreneurship with innovation.|Joseph Schumpeter|Schumpeter introduced the concept of creative destruction."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--border);">
           <button class="btn btn-outline" id="btn-parse-dryrun">🔍 Check & Test Parse</button>
-          <button class="btn btn-primary" id="btn-publish-firebase">🚀 Publish / Submit for Vetting</button>
+          <button class="btn btn-primary" id="btn-publish-firebase" style="font-weight: 700; padding: 10px 20px;">🚀 Publish / Submit for Vetting</button>
         </div>
 
         <!-- Parse Preview Result -->

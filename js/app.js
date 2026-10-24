@@ -20,6 +20,7 @@ import {
 } from "./firebase-config.js";
 
 import { parseQuestionBank } from "./parser.js";
+import { AIGenerator } from "./ai-generator.js";
 
 // DOM Selector Helper
 const $ = (s) => document.querySelector(s);
@@ -921,6 +922,312 @@ function initParser() {
 }
 
 // ==========================================
+// 5B. AI NOUN CBT EXAM GENERATOR (BATCHED)
+// ==========================================
+function initAIGenerator() {
+  const ai = new AIGenerator();
+
+  const tabAi = $("#btn-tab-ai-generator");
+  const tabManual = $("#btn-tab-manual-paste");
+  const panelAi = $("#ai-generator-panel");
+  const panelManual = $("#manual-paste-panel");
+
+  const keyInput = $("#ai-gemini-key");
+  const toggleKeyBtn = $("#btn-toggle-key-visibility");
+  const contextInput = $("#ai-course-context");
+  const rawInput = $("#ai-raw-input");
+  const batchSelect = $("#ai-batch-size");
+  const startBtn = $("#btn-start-ai-generation");
+  const stopBtn = $("#btn-stop-ai-generation");
+
+  const progressBox = $("#ai-progress-box");
+  const progressStatus = $("#ai-progress-status");
+  const progressPercent = $("#ai-progress-percent");
+  const progressBar = $("#ai-progress-bar");
+  const progressLog = $("#ai-progress-log");
+
+  const reviewDeck = $("#ai-review-deck");
+  const deckCount = $("#ai-deck-count");
+  const cardsList = $("#ai-question-cards-list");
+  const addQuestionBtn = $("#btn-ai-add-question");
+  const applyBtn = $("#btn-ai-apply-to-portal");
+
+  const textArea = $("#raw-question-text");
+  const parseResultBox = $("#parse-results");
+
+  // Load saved API key
+  if (keyInput) {
+    keyInput.value = ai.getApiKey();
+    keyInput.addEventListener("input", () => {
+      ai.saveApiKey(keyInput.value);
+    });
+  }
+
+  // Toggle API key visibility
+  toggleKeyBtn?.addEventListener("click", () => {
+    keyInput.type = keyInput.type === "password" ? "text" : "password";
+  });
+
+  // Switch tabs
+  tabAi?.addEventListener("click", () => {
+    panelAi.style.display = "block";
+    panelManual.style.display = "none";
+    tabAi.className = "btn btn-primary btn-sm";
+    tabManual.className = "btn btn-outline btn-sm";
+  });
+
+  tabManual?.addEventListener("click", () => {
+    panelAi.style.display = "none";
+    panelManual.style.display = "block";
+    tabAi.className = "btn btn-outline btn-sm";
+    tabManual.className = "btn btn-primary btn-sm";
+  });
+
+  // Load Sample NOUN Entries
+  $("#btn-load-sample-noun")?.addEventListener("click", () => {
+    contextInput.value = "GST 204 / PCR 115: Peace Studies and Conflict Resolution";
+    rawInput.value = `"_____ inferred that without conflict we cannot have change"
+"Ross (1993)"
+
+"Conflict can be defined as an expressed struggle between at least two _____ parties"
+"interdependent"
+
+"_____ defined conflict as a struggle over values or claims to status, power and scarce resources"
+"Coser (1956)"
+
+"Conflict is an inevitable aspect of human interaction and an essential feature of _____ life"
+"social"
+
+"According to Kriesberg (1973), a conflict relationship exists when two or more parties believe they have _____ goals"
+"incompatible"
+
+"_____ view conflict as a breakdown of communication and mutual understanding"
+"Burton (1990)"
+
+"Conflict management involves the long-term management of _____ conflicts"
+"intractable"
+
+"Conflict resolution refers to terminating conflict by methods that are _____ and constructive"
+"analytical"
+
+"_____ asserted that peace is not merely the absence of war, but the presence of justice"
+"Martin Luther King Jr."
+
+"The process of de-escalating tension between warring factions is known as conflict _____"
+"de-escalation"`;
+  });
+
+  // Render question card list in review deck
+  function renderQuestionCards() {
+    const list = ai.generatedQuestions;
+    if (deckCount) {
+      deckCount.textContent = `${list.length} questions generated. Review distractors, verbatim text, and explanations before publishing.`;
+    }
+    cardsList.innerHTML = list.map((q, idx) => `
+      <div class="card" style="margin-bottom: 0; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px;" data-idx="${idx}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span class="badge badge-primary" style="font-size: 11px;">Question ${idx + 1}</span>
+          <button type="button" class="btn btn-outline btn-sm btn-delete-ai-card" data-idx="${idx}" style="color: var(--danger); padding: 2px 8px; font-size: 11px;">✕ Delete</button>
+        </div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--muted);">Verbatim Question Text:</label>
+          <input type="text" class="ai-q-text" data-idx="${idx}" value="${escapeHtml(q.question)}" style="font-size: 13.5px; font-weight: 600; background: #fff;">
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 8px;">
+          ${q.options.map((opt, optIdx) => {
+            const isCorrect = opt === q.answer;
+            return `
+              <div style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: ${isCorrect ? 'var(--success-bg)' : '#fff'}; border: 1.5px solid ${isCorrect ? 'var(--success)' : 'var(--border)'}; border-radius: 8px;">
+                <input type="radio" name="ai_ans_${idx}" class="ai-radio-ans" data-idx="${idx}" data-opt="${optIdx}" ${isCorrect ? 'checked' : ''} title="Mark as correct answer">
+                <input type="text" class="ai-opt-input" data-idx="${idx}" data-opt="${optIdx}" value="${escapeHtml(opt)}" style="border: none; background: transparent; width: 100%; font-size: 13px; font-weight: ${isCorrect ? '700' : 'normal'}; color: ${isCorrect ? 'var(--success)' : 'inherit'};">
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--muted);">Explanation:</label>
+          <input type="text" class="ai-q-expl" data-idx="${idx}" value="${escapeHtml(q.explanation)}" style="font-size: 12px; font-style: italic; background: #fff;">
+        </div>
+      </div>
+    `).join('');
+
+    // Attach event listeners for inline edits
+    cardsList.querySelectorAll('.ai-q-text').forEach(el => {
+      el.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        ai.generatedQuestions[idx].question = e.target.value;
+      });
+    });
+
+    cardsList.querySelectorAll('.ai-opt-input').forEach(el => {
+      el.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        const optIdx = parseInt(e.target.dataset.opt, 10);
+        const oldVal = ai.generatedQuestions[idx].options[optIdx];
+        const newVal = e.target.value;
+        ai.generatedQuestions[idx].options[optIdx] = newVal;
+        if (ai.generatedQuestions[idx].answer === oldVal) {
+          ai.generatedQuestions[idx].answer = newVal;
+        }
+      });
+    });
+
+    cardsList.querySelectorAll('.ai-radio-ans').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        const optIdx = parseInt(e.target.dataset.opt, 10);
+        ai.generatedQuestions[idx].answer = ai.generatedQuestions[idx].options[optIdx];
+        renderQuestionCards();
+      });
+    });
+
+    cardsList.querySelectorAll('.ai-q-expl').forEach(el => {
+      el.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        ai.generatedQuestions[idx].explanation = e.target.value;
+      });
+    });
+
+    cardsList.querySelectorAll('.btn-delete-ai-card').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        ai.generatedQuestions.splice(idx, 1);
+        renderQuestionCards();
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // Start Generation
+  startBtn?.addEventListener("click", async () => {
+    const raw = rawInput.value.trim();
+    if (!raw) {
+      alert("Please paste your fill-in-the-blank or Q&A lines into the text box first.");
+      rawInput.focus();
+      return;
+    }
+
+    const key = ai.getApiKey();
+    if (!key) {
+      alert("Please paste your Google Gemini API key to proceed. You can generate one free at https://aistudio.google.com/apikey");
+      keyInput.focus();
+      return;
+    }
+
+    startBtn.disabled = true;
+    startBtn.style.display = "none";
+    stopBtn.style.display = "inline-flex";
+    progressBox.style.display = "block";
+    progressLog.innerHTML = "";
+    progressBar.style.width = "0%";
+    reviewDeck.style.display = "none";
+
+    const batchSize = parseInt(batchSelect.value, 10) || 10;
+    const courseContext = contextInput.value.trim();
+
+    try {
+      const results = await ai.runPipeline({
+        rawText: raw,
+        courseContext,
+        batchSize,
+        onProgress: ({ batchIndex, totalBatches, percent, statusText }) => {
+          progressStatus.textContent = statusText;
+          progressPercent.textContent = `${percent}%`;
+          progressBar.style.width = `${percent}%`;
+        },
+        onBatchSuccess: ({ batchIndex, totalBatches, batchResults, totalGenerated }) => {
+          progressLog.innerHTML += `<div style="color: var(--success); margin-bottom: 2px;">✓ Batch ${batchIndex + 1}/${totalBatches}: Generated ${batchResults.length} CBT questions (${totalGenerated} total)</div>`;
+        },
+        onError: (err, batchIndex) => {
+          progressLog.innerHTML += `<div style="color: var(--danger); margin-bottom: 2px;">❌ Batch ${batchIndex + 1} Error: ${err.message}</div>`;
+        }
+      });
+
+      if (results.length > 0) {
+        reviewDeck.style.display = "block";
+        renderQuestionCards();
+        reviewDeck.scrollIntoView({ behavior: "smooth" });
+      } else {
+        alert("No questions were generated. Please check your Gemini API key and prompt text.");
+      }
+    } catch (e) {
+      alert(`AI Generation Error: ${e.message}`);
+    } finally {
+      startBtn.disabled = false;
+      startBtn.style.display = "inline-flex";
+      stopBtn.style.display = "none";
+    }
+  });
+
+  // Stop Generation
+  stopBtn?.addEventListener("click", () => {
+    ai.stop();
+    stopBtn.textContent = "Stopping...";
+    stopBtn.disabled = true;
+  });
+
+  // Add Custom Question manually in deck
+  addQuestionBtn?.addEventListener("click", () => {
+    ai.generatedQuestions.push({
+      id: `custom_${Date.now()}`,
+      question: "_____ is an example of an academic question.",
+      options: ["Correct Answer", "Distractor 1", "Distractor 2", "Distractor 3"],
+      answer: "Correct Answer",
+      explanation: "Explanation confirming the answer."
+    });
+    renderQuestionCards();
+  });
+
+  // Apply to Question Bank & Prepare for Vetting
+  applyBtn?.addEventListener("click", async () => {
+    if (ai.generatedQuestions.length === 0) {
+      alert("No questions in deck to apply.");
+      return;
+    }
+
+    // Convert reviewed questions into standard JSON array format
+    const formatted = ai.generatedQuestions.map((q, idx) => ({
+      id: String(idx + 1),
+      text: q.question,
+      options: q.options,
+      correctAnswer: q.answer,
+      group: "General",
+      explanation: q.explanation
+    }));
+
+    textArea.value = JSON.stringify(formatted, null, 2);
+
+    // Switch to manual view & run dryrun parse
+    panelAi.style.display = "none";
+    panelManual.style.display = "block";
+    tabAi.className = "btn btn-outline btn-sm";
+    tabManual.className = "btn btn-primary btn-sm";
+
+    parseResultBox.style.display = "block";
+    parseResultBox.innerHTML = "<div class='alert alert-warning'>Verifying AI-generated question bank...</div>";
+
+    const result = await parseQuestionBank(textArea.value);
+    if (result.ok) {
+      lastParsedQuestions = result.questions;
+      parseResultBox.innerHTML = `
+        <div class="alert alert-success">
+          ✓ Successfully loaded <b>${result.total} AI-generated questions</b> into Question Bank!
+          <br>All questions have verified 4-option CBT structure and explanations.
+        </div>
+      `;
+      alert(`✓ Success! ${result.total} AI-generated questions are now loaded and ready. Review the metadata above (Course Code, Title, Level) and click 'Publish / Submit for Vetting' when ready.`);
+      $("#btn-publish-firebase")?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      parseResultBox.innerHTML = `<div class='alert alert-danger'>❌ Error: ${result.error}</div>`;
+    }
+  });
+}
+
+// ==========================================
 // 6. SUPER ADMIN SUITE LOGIC
 // ==========================================
 async function loadAdminData() {
@@ -1494,6 +1801,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTierControls();
   initAuth();
   initParser();
+  initAIGenerator();
   initHandover();
   initSimulatorAndBank();
 });
