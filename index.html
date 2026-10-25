@@ -492,29 +492,19 @@
         <!-- TAB CONTENT 1: AI CBT GENERATOR -->
         <div id="ai-generator-panel" style="display: block;">
           <div style="background: var(--primary-light); border: 1.5px solid var(--primary); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
               <div style="font-weight: 700; font-size: 14px; color: var(--primary); display: flex; align-items: center; gap: 6px;">
                 <span>🤖 NOUN CBT Exam Generator (Batched AI)</span>
-                <span class="badge badge-primary">Gemini 2.0 Flash</span>
+                <span class="badge badge-primary">Platform AI Active</span>
               </div>
-              <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Get Free Google AI Studio API Key ↗</a>
             </div>
             <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 12px; line-height: 1.45;">
               Paste your raw fill-in-the-blank or Q&A lines directly from past exams or TMA summaries. The AI processes them in <b>safe batches of 10</b>, preserves the <b>exact verbatim question and answer</b>, generates <b>3 plausible distractors</b>, and provides explanations.
             </p>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 12px; font-weight: 700;">Google Gemini API Key</label>
-                <div style="display: flex; gap: 6px;">
-                  <input type="password" id="ai-gemini-key" placeholder="Paste your Gemini API key (AIzaSy...)" style="background: #fff; font-family: monospace; font-size: 12px;">
-                  <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-key-visibility" title="Show/Hide Key">👁️</button>
-                </div>
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 12px; font-weight: 700;">Course Context & Subject Hint (Optional)</label>
-                <input type="text" id="ai-course-context" placeholder="e.g. GST 204: Peace Studies and Conflict Resolution" style="background: #fff; font-size: 12px;">
-              </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 12px; font-weight: 700;">Course Context & Subject Hint (Optional)</label>
+              <input type="text" id="ai-course-context" placeholder="e.g. GST 204: Peace Studies and Conflict Resolution" style="background: #fff; font-size: 12.5px;">
             </div>
           </div>
 

@@ -1,7 +1,8 @@
+import { ENV } from "./env.js";
+
 // Olodo Paystack Configuration
-// Replace this with your actual Paystack Public Key from https://dashboard.paystack.co/#/settings/developer
-// Use 'pk_test_...' for testing or 'pk_live_...' for production.
-export const PAYSTACK_PUBLIC_KEY = "pk_test_c68612984920803452f10928a47a192801928374";
+// Centralized in js/env.js (.env equivalent)
+export const PAYSTACK_PUBLIC_KEY = ENV.PAYSTACK_PUBLIC_KEY || "pk_test_c68612984920803452f10928a47a192801928374";
 
 /**
  * Initiates Paystack inline checkout popup.

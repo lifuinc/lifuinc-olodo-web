@@ -932,8 +932,6 @@ function initAIGenerator() {
   const panelAi = $("#ai-generator-panel");
   const panelManual = $("#manual-paste-panel");
 
-  const keyInput = $("#ai-gemini-key");
-  const toggleKeyBtn = $("#btn-toggle-key-visibility");
   const contextInput = $("#ai-course-context");
   const rawInput = $("#ai-raw-input");
   const batchSelect = $("#ai-batch-size");
@@ -954,19 +952,6 @@ function initAIGenerator() {
 
   const textArea = $("#raw-question-text");
   const parseResultBox = $("#parse-results");
-
-  // Load saved API key
-  if (keyInput) {
-    keyInput.value = ai.getApiKey();
-    keyInput.addEventListener("input", () => {
-      ai.saveApiKey(keyInput.value);
-    });
-  }
-
-  // Toggle API key visibility
-  toggleKeyBtn?.addEventListener("click", () => {
-    keyInput.type = keyInput.type === "password" ? "text" : "password";
-  });
 
   // Switch tabs
   tabAi?.addEventListener("click", () => {
@@ -1113,8 +1098,7 @@ function initAIGenerator() {
 
     const key = ai.getApiKey();
     if (!key) {
-      alert("Please paste your Google Gemini API key to proceed. You can generate one free at https://aistudio.google.com/apikey");
-      keyInput.focus();
+      alert("Platform AI key is not configured yet. Please paste your GEMINI_API_KEY into js/env.js (or .env).");
       return;
     }
 

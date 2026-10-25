@@ -1,12 +1,14 @@
 // Olodo AI Question Generator for NOUN CBT & Nigerian Curricula
 // Powered by Google Gemini API with Batching, Strict Schema, and Interactive Review
 
+import { ENV } from "./env.js";
+
 const DEFAULT_MODEL = "gemini-2.0-flash";
 const FALLBACK_MODEL = "gemini-1.5-flash";
 
 export class AIGenerator {
   constructor() {
-    this.apiKey = localStorage.getItem("olodo_gemini_api_key") || "";
+    this.apiKey = ENV.GEMINI_API_KEY || localStorage.getItem("olodo_gemini_api_key") || "";
     this.isGenerating = false;
     this.shouldStop = false;
     this.generatedQuestions = [];
@@ -18,7 +20,7 @@ export class AIGenerator {
   }
 
   getApiKey() {
-    return this.apiKey || localStorage.getItem("olodo_gemini_api_key") || "";
+    return (ENV.GEMINI_API_KEY || "").trim() || this.apiKey || localStorage.getItem("olodo_gemini_api_key") || "";
   }
 
   stop() {
@@ -79,7 +81,7 @@ export class AIGenerator {
   async generateBatch({ batchText, courseContext, batchIndex, totalBatches, model = DEFAULT_MODEL }) {
     const key = this.getApiKey();
     if (!key) {
-      throw new Error("Gemini API Key is missing. Please provide your API key.");
+      throw new Error("Platform Gemini API Key is not configured yet. Please set GEMINI_API_KEY in js/env.js (or .env).");
     }
 
     const contextInstruction = courseContext && courseContext.trim().length > 0
