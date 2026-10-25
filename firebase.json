@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "brainsquard-studio-b458b",
     "public": ".",
     "ignore": [
       "firebase.json",

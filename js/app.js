@@ -14,6 +14,7 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  deleteDoc,
   query,
   where,
   serverTimestamp
@@ -257,6 +258,7 @@ function initNavigation() {
       chip.classList.add("active");
       activeTierFilter = chip.getAttribute("data-filter");
       renderCourses();
+    updateCourseAvailabilityUI();
     });
   });
 
@@ -315,7 +317,10 @@ function initTierControls() {
     $("#course-price").value = "₦1,000";
   }
 
-  tierSelect?.addEventListener("change", updateTierFields);
+  tierSelect?.addEventListener("change", () => {
+    updateTierFields();
+    updateCourseAvailabilityUI();
+  });
   updateTierFields();
 
   // Institution "+ Add New" Toggle
@@ -326,7 +331,153 @@ function initTierControls() {
     } else {
       customSchoolBox.style.display = "none";
     }
+    updateCourseAvailabilityUI();
   });
+
+  // Real-time Course Duplicate Listeners
+  $("#course-code")?.addEventListener("input", updateCourseAvailabilityUI);
+  $("#course-code")?.addEventListener("blur", updateCourseAvailabilityUI);
+  $("#course-title")?.addEventListener("input", updateCourseAvailabilityUI);
+  $("#course-level")?.addEventListener("change", updateCourseAvailabilityUI);
+  $("#course-period")?.addEventListener("change", updateCourseAvailabilityUI);
+  $("#custom-school-name")?.addEventListener("input", updateCourseAvailabilityUI);
+
+  // Keep AI context hint tracking course title if user hasn't typed their own
+  $("#ai-course-context")?.addEventListener("input", () => {
+    $("#ai-course-context").dataset.manuallyEdited = "true";
+  });
+}
+
+// ==========================================
+// COURSE AVAILABILITY & DUPLICATE CHECKER
+// ==========================================
+function getCourseAvailability() {
+  const code = ($("#course-code")?.value || "").trim();
+  const tier = $("#course-tier")?.value || "tertiary";
+  let institution = $("#course-institution")?.value || "";
+  if (institution === "__NEW__") {
+    institution = ($("#custom-school-name")?.value || "").trim();
+  }
+  const level = $("#course-level")?.value || "";
+  const period = $("#course-period")?.value || "";
+
+  if (!code) {
+    return { status: "empty", code: "", isDuplicate: false, isAllowed: true };
+  }
+
+  const cleanTier = tier.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const cleanCode = code.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const cleanInst = institution.split("(")[0].trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  const cleanLevel = level.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const cleanPeriod = period.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const docId = `${cleanTier}_${cleanInst}_${cleanLevel}_${cleanPeriod}_${cleanCode}`;
+
+  const isSuperAdmin = currentUser && currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+  const existing = currentCourses.find((c) => c.docId === docId);
+
+  if (!existing) {
+    return {
+      status: "available",
+      docId,
+      code,
+      institution,
+      level,
+      period,
+      isDuplicate: false,
+      isAllowed: true
+    };
+  }
+
+  const isOriginalAuthor = (existing.authorId && currentUser && existing.authorId === currentUser.uid) ||
+                           (existing.authorEmail && currentUser && existing.authorEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+                           (existing.currentCuratorId && currentUser && existing.currentCuratorId === currentUser.uid);
+
+  if (isOriginalAuthor || isSuperAdmin) {
+    return {
+      status: "own_course",
+      docId,
+      code,
+      institution,
+      level,
+      period,
+      version: existing.version || 1,
+      totalQuestions: existing.totalQuestions || (existing.questions ? existing.questions.length : 0),
+      existingAuthor: existing.authorName || existing.authorEmail,
+      isDuplicate: true,
+      isAllowed: true
+    };
+  }
+
+  return {
+    status: "duplicate",
+    docId,
+    code,
+    institution,
+    level,
+    period,
+    existingAuthor: existing.authorName || existing.authorEmail || "Another Verified Educator",
+    isDuplicate: true,
+    isAllowed: false
+  };
+}
+
+function updateCourseAvailabilityUI() {
+  const result = getCourseAvailability();
+  const statusEl = $("#course-code-status");
+  const codeInput = $("#course-code");
+  const aiBanner = $("#ai-course-status-banner");
+
+  // Keep AI context hint synchronized with course title if user hasn't customized it
+  const titleInput = $("#course-title");
+  const contextInput = $("#ai-course-context");
+  if (contextInput && !contextInput.dataset.manuallyEdited) {
+    const hint = [result.code, titleInput?.value?.trim()].filter(Boolean).join(": ");
+    if (hint) contextInput.value = hint;
+  }
+
+  if (!statusEl) return;
+
+  if (result.status === "empty") {
+    statusEl.innerHTML = '<span style="color: var(--muted); font-size: 11px;">Enter course code to verify availability against existing question banks.</span>';
+    if (codeInput) codeInput.style.borderColor = "";
+    if (aiBanner) aiBanner.style.display = "none";
+    return;
+  }
+
+  if (result.status === "available") {
+    statusEl.innerHTML = `<span style="color: #16a34a; font-weight: 700; font-size: 11.5px;">✓ Course code available! You will be registered as the author for ${result.institution || "this curriculum"}.</span>`;
+    if (codeInput) codeInput.style.borderColor = "#16a34a";
+    if (aiBanner) {
+      aiBanner.style.display = "block";
+      aiBanner.className = "alert alert-success";
+      aiBanner.style.margin = "0 0 12px 0";
+      aiBanner.style.padding = "8px 12px";
+      aiBanner.style.fontSize = "12px";
+      aiBanner.innerHTML = `✓ <b>Course Available:</b> <b>${result.code}</b> (${result.institution} · ${result.level} · ${result.period}) is open for registration. Questions generated will be saved under your account.`;
+    }
+  } else if (result.status === "own_course") {
+    statusEl.innerHTML = `<span style="color: #2563eb; font-weight: 700; font-size: 11.5px;">ℹ️ Your Existing Course: v${result.version} (${result.totalQuestions} Qs). Generating / uploading will create Version ${result.version + 1}.</span>`;
+    if (codeInput) codeInput.style.borderColor = "#2563eb";
+    if (aiBanner) {
+      aiBanner.style.display = "block";
+      aiBanner.className = "alert alert-warning";
+      aiBanner.style.margin = "0 0 12px 0";
+      aiBanner.style.padding = "8px 12px";
+      aiBanner.style.fontSize = "12px";
+      aiBanner.innerHTML = `ℹ️ <b>Your Existing Question Bank:</b> <b>${result.code}</b> is registered under your account (Version ${result.version}). Generating questions will update it to <b>Version ${result.version + 1}</b>.`;
+    }
+  } else if (result.status === "duplicate") {
+    statusEl.innerHTML = `<span style="color: #dc2626; font-weight: 700; font-size: 11.5px;">⛔ Taken: Already registered by ${result.existingAuthor}. You cannot register or claim royalties for this course.</span>`;
+    if (codeInput) codeInput.style.borderColor = "#dc2626";
+    if (aiBanner) {
+      aiBanner.style.display = "block";
+      aiBanner.className = "alert alert-danger";
+      aiBanner.style.margin = "0 0 12px 0";
+      aiBanner.style.padding = "8px 12px";
+      aiBanner.style.fontSize = "12px";
+      aiBanner.innerHTML = `⛔ <b>Duplicate Course Warning:</b> <b>${result.code}</b> in ${result.institution} (${result.level} · ${result.period}) is already registered by <b>${result.existingAuthor}</b>. Please change your course code in Step 1 to avoid wasting AI credits!`;
+    }
+  }
 }
 
 // ==========================================
@@ -541,6 +692,7 @@ async function loadCoursesFromFirestore() {
     }
 
     renderCourses();
+    updateCourseAvailabilityUI();
 
     // Stats
     let totalQuestionsCount = 0;
@@ -641,6 +793,7 @@ function renderCourses() {
           <td>
             <div style="display: flex; gap: 6px;">
               <button class="btn btn-outline btn-sm" onclick="editCourse('${c.docId}')">Edit / Update</button>
+              <button class="btn btn-outline btn-sm" onclick="deleteCourse('${c.docId}')" style="color: #dc2626; border-color: #fca5a5;" title="Delete this question bank">🗑️ Delete</button>
             </div>
           </td>
         </tr>
@@ -670,7 +823,10 @@ function renderCourses() {
           </div>
           <div class="feed-card-footer">
             <span style="font-size: 12px; color: var(--muted);">${c.academicSession || "2025/2026"}</span>
-            <button class="btn btn-outline btn-sm" onclick="editCourse('${c.docId}')">Edit / Update</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-outline btn-sm" onclick="editCourse('${c.docId}')">Edit / Update</button>
+              <button class="btn btn-outline btn-sm" onclick="deleteCourse('${c.docId}')" style="color: #dc2626; border-color: #fca5a5;" title="Delete this question bank">🗑️ Delete</button>
+            </div>
           </div>
         </div>
       `;
@@ -678,7 +834,7 @@ function renderCourses() {
     .join("");
 }
 
-// Window global for action button
+// Window global for action button: Edit / Update Course & Questions
 window.editCourse = function (docId) {
   const found = currentCourses.find((c) => c.docId === docId);
   if (!found) return;
@@ -696,7 +852,68 @@ window.editCourse = function (docId) {
   $("#course-session").value = found.academicSession || "2025/2026";
   $("#course-price").value = "₦1,000";
 
+  // Pre-load existing questions into editor so author can view, edit, or delete questions
+  if (found.questions && Array.isArray(found.questions) && found.questions.length > 0) {
+    const letters = ["A", "B", "C", "D", "E"];
+    const formatted = found.questions.map((q, idx) => {
+      let block = `${idx + 1}. ${q.question || q.text || ""}\n`;
+      if (Array.isArray(q.options)) {
+        q.options.forEach((opt, oi) => {
+          block += `${letters[oi] || "*"}. ${opt}\n`;
+        });
+      }
+      if (q.answer || q.correctAnswer) block += `Answer: ${q.answer || q.correctAnswer}\n`;
+      if (q.explanation) block += `Explanation: ${q.explanation}\n`;
+      return block.trim();
+    }).join("\n\n");
+
+    const textArea = $("#raw-question-text");
+    if (textArea) {
+      textArea.value = formatted;
+    }
+  }
+
   $('[data-tab="tab-upload"]')?.click();
+  // Switch to Manual tab so the pre-loaded questions are immediately visible
+  $("#tab-btn-manual")?.click();
+};
+
+// Window global for action button: Delete Question Bank
+window.deleteCourse = async function (docId) {
+  const found = currentCourses.find((c) => c.docId === docId);
+  if (!found) {
+    alert("Question bank not found.");
+    return;
+  }
+
+  // Ownership verification check: only original author, current curator, or Super Admin
+  const isSuperAdmin = currentUser && currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+  const isAuthor = currentUser && (
+    (found.authorId && found.authorId === currentUser.uid) ||
+    (found.authorEmail && found.authorEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+    (found.currentCuratorId && found.currentCuratorId === currentUser.uid) ||
+    (found.currentCuratorEmail && found.currentCuratorEmail.toLowerCase() === currentUser.email.toLowerCase())
+  );
+
+  if (!isAuthor && !isSuperAdmin) {
+    alert(`⛔ Permission Denied: Only the original author (${found.authorName || found.authorEmail || "Educator"}) or the Olodo Platform Admin can delete this question bank.`);
+    return;
+  }
+
+  const courseLabel = `"${found.code} - ${found.title}" (${found.totalQuestions || (found.questions ? found.questions.length : 0)} Questions)`;
+  const confirmed = confirm(
+    `Are you sure you want to delete ${courseLabel}?\n\n` +
+    `WARNING: This will permanently remove this question bank from the platform and student mobile app. This action cannot be undone.`
+  );
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "courses", docId));
+    alert(`✓ Successfully deleted ${courseLabel}.`);
+    await loadCoursesFromFirestore();
+  } catch (err) {
+    alert("Error deleting course: " + err.message);
+  }
 };
 
 // ==========================================
@@ -848,12 +1065,41 @@ function initParser() {
     const cleanPeriod = period.toLowerCase().replace(/[^a-z0-9]/g, "");
     const docId = `${cleanTier}_${cleanInst}_${cleanLevel}_${cleanPeriod}_${cleanCode}`;
 
-    // Compute Version Increment
+    // =========================================================================
+    // DUPLICATE COURSE REJECTION & VERSION CONTROL LOGIC
+    // =========================================================================
+    const isSuperAdmin = currentUser && currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
     const existing = currentCourses.find((c) => c.docId === docId);
+
+    if (existing) {
+      const isOriginalAuthor = (existing.authorId && existing.authorId === currentUser.uid) ||
+                               (existing.authorEmail && existing.authorEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+                               (existing.currentCuratorId && existing.currentCuratorId === currentUser.uid);
+
+      if (!isOriginalAuthor && !isSuperAdmin) {
+        // REJECT DUPLICATE REGISTRATION
+        alert(
+          `⛔ DUPLICATE COURSE REJECTED!\n\n` +
+          `A question bank for "${code} (${title})" in ${institution} (${level} · ${period}) is already registered on Olodo by another educator (${existing.authorName || existing.authorEmail || "Verified Author"}).\n\n` +
+          `• Why this is blocked: To protect educator royalties and prevent duplicate student fees, duplicate courses cannot be registered.\n\n` +
+          `• What to do: If you believe this is in error, or wish to request curator handover, please contact the Olodo Academic Vetting Board.`
+        );
+        return;
+      }
+
+      // Original author confirming version update:
+      const confirmUpdate = confirm(
+        `ℹ️ Existing Question Bank Found:\n\n` +
+        `You previously published "${code} - ${title}" (currently at Version ${existing.version || 1} with ${existing.totalQuestions || 0} questions).\n\n` +
+        `Publishing now will update it to Version ${(existing.version || 1) + 1} with your new batch of ${result.total} questions.\n\n` +
+        `Do you want to proceed with this update?`
+      );
+      if (!confirmUpdate) return;
+    }
+
     const nextVersion = existing ? (existing.version || 1) + 1 : 1;
 
     // Check verification status
-    const isSuperAdmin = currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
     const isVerified = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified");
 
     const courseDoc = {
@@ -1089,6 +1335,19 @@ function initAIGenerator() {
 
   // Start Generation
   startBtn?.addEventListener("click", async () => {
+    // 0. Pre-Flight Duplicate Check: Prevent Wasting Gemini AI Credits on Blocked Duplicate Courses
+    const availability = getCourseAvailability();
+    if (availability.status === "duplicate" && !availability.isAllowed) {
+      alert(
+        `⛔ AI GENERATION BLOCKED TO PROTECT YOUR CREDITS!\n\n` +
+        `The course "${availability.code}" for ${availability.institution} (${availability.level} · ${availability.period}) is already registered on Olodo by ${availability.existingAuthor}.\n\n` +
+        `Because duplicate courses cannot be registered or monetized, running the AI generator now would waste your Gemini AI quota and credits.\n\n` +
+        `Please change your Course Code or Class in Step 1 to your own course before generating.`
+      );
+      $("#course-code")?.focus();
+      return;
+    }
+
     const raw = rawInput.value.trim();
     if (!raw) {
       alert("Please paste your fill-in-the-blank or Q&A lines into the text box first.");

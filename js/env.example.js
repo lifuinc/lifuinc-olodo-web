@@ -1,19 +1,16 @@
 // =========================================================================
-// OLODO PLATFORM ENVIRONMENT CONFIGURATION (.ENV EQUIVALENT)
+// OLODO PLATFORM ENVIRONMENT CONFIGURATION TEMPLATE (env.example.js)
 // =========================================================================
-// Paste your platform API keys here in this central configuration file.
+// Copy this file to env.js and insert your keys.
 // Lecturers will NEVER see these keys; the platform uses them automatically.
 // =========================================================================
 
 export const ENV = {
   // 1. Google Gemini AI API Key (Powers the NOUN CBT Exam Generator)
-  // Paste your key from https://aistudio.google.com/apikey here:
-  GEMINI_API_KEY: "",
+  GEMINI_API_KEY: "your_gemini_api_key_here",
 
   // 2. Paystack Public Key (For student payments & course checkout)
-  // Paste your key from https://dashboard.paystack.co/#/settings/developer
-  // Use 'pk_test_...' for testing or 'pk_live_...' for production
-  PAYSTACK_PUBLIC_KEY: "pk_test_c68612984920803452f10928a47a192801928374",
+  PAYSTACK_PUBLIC_KEY: "pk_test_your_paystack_public_key_here",
 
   // 3. Platform Environment ('development' | 'production')
   ENVIRONMENT: "production",
