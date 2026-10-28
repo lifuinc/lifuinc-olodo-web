@@ -7,7 +7,21 @@
       "**/.*",
       "server.ps1",
       "run_portal.bat",
-      "deploy_to_firebase.bat"
+      "deploy_to_firebase.bat",
+      "functions/**"
     ]
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
 }
