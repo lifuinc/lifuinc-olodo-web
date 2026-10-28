@@ -3,50 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Activate Olodo Pass | Official Student Portal</title>
+  <title>Olodo Pass Activation | Official Student Portal</title>
   <meta name="description" content="Activate your Olodo student pass for unlimited offline active recall study and quizzes.">
   <link rel="stylesheet" href="css/styles.css">
+  <!-- Paystack Inline JS (Official v1 inline checkout) -->
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <style>
+    :root {
+      --primary: #1E3A8A;
+      --primary-dark: #1E293B;
+      --primary-light: #EFF6FF;
+      --accent: #F59E0B;
+      --brand-cyan: #06B6D4;
+      --success: #10B981;
+      --success-bg: #ECFDF5;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --border: #E2E8F0;
+      --text: #0F172A;
+      --muted: #64748B;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       display: block;
       background: var(--bg);
       color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.6;
       padding-bottom: 60px;
     }
     .portal-container {
-      max-width: 640px;
-      margin: 30px auto;
+      max-width: 620px;
+      margin: 24px auto;
       padding: 0 16px;
     }
     .portal-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px 24px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      border-radius: 18px;
+      padding: 28px 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
     }
     .portal-header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     .brand-icon {
-      width: 56px;
-      height: 56px;
-      background: var(--primary-light);
-      color: var(--primary);
-      border-radius: 50%;
+      width: 58px;
+      height: 58px;
+      background: linear-gradient(135deg, #06B6D4, #1E3A8A);
+      color: #fff;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 28px;
       margin: 0 auto 12px;
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
     }
     h1 {
-      font-family: Georgia, serif;
-      font-size: 24px;
+      font-size: 22px;
+      font-weight: 800;
       color: var(--primary);
+      letter-spacing: -0.02em;
       margin-bottom: 4px;
     }
     .tagline {
@@ -55,14 +78,45 @@
       font-size: 13px;
       margin-bottom: 12px;
     }
-    .meta-badge {
-      display: inline-block;
+    /* Academic Profile Box */
+    .academic-profile-box {
       background: var(--primary-light);
-      color: var(--primary);
-      padding: 4px 12px;
-      border-radius: 20px;
+      border: 1px solid #BFDBFE;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+    .profile-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .profile-row:last-child {
+      margin-bottom: 0;
+    }
+    .profile-label {
+      color: var(--muted);
+      font-weight: 600;
       font-size: 12px;
+      white-space: nowrap;
+    }
+    .profile-value {
+      color: var(--primary);
       font-weight: 700;
+      text-align: right;
+      word-break: break-word;
+    }
+    .badge-course {
+      display: inline-block;
+      background: #DBEAFE;
+      color: #1E40AF;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 12px;
     }
     .student-info-box {
       background: var(--bg);
@@ -75,48 +129,79 @@
       display: block;
       font-size: 12px;
       color: var(--muted);
-      font-weight: 600;
-      margin-bottom: 4px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
     .student-info-box input {
       width: 100%;
       background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-size: 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .student-info-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    }
+    .input-hint {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
     }
     .plan-card {
       border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 16px;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
+      background: #fff;
     }
     .plan-card:hover {
-      border-color: var(--primary);
+      border-color: #93C5FD;
     }
     .plan-card.selected {
       border-color: var(--primary);
-      background: var(--primary-light);
+      background: #F0F7FF;
+      box-shadow: 0 0 0 1px var(--primary);
     }
     .plan-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .plan-title {
       font-size: 16px;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--text);
     }
+    .plan-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-top: 2px;
+    }
+    .tag-best {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+    .tag-single {
+      background: #E0E7FF;
+      color: #3730A3;
+    }
     .plan-price {
-      font-family: Georgia, serif;
       font-size: 20px;
       font-weight: 800;
       color: var(--primary);
@@ -125,7 +210,7 @@
     .plan-desc {
       font-size: 13px;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .plan-perks {
       list-style: none;
@@ -134,7 +219,7 @@
     }
     .plan-perks li {
       font-size: 12px;
-      color: #374151;
+      color: #334155;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -143,15 +228,15 @@
     .plan-perks li::before {
       content: "✓";
       color: var(--success);
-      font-weight: 800;
+      font-weight: 900;
     }
     .btn-pay {
       width: 100%;
       background: var(--primary);
       color: #fff;
       border: none;
-      border-radius: 8px;
-      padding: 14px;
+      border-radius: 10px;
+      padding: 15px;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
@@ -159,21 +244,26 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin-top: 10px;
-      transition: background 0.2s;
+      margin-top: 14px;
+      transition: background 0.2s, transform 0.1s;
     }
     .btn-pay:hover {
-      background: var(--primary-dark);
+      background: #1E293B;
+    }
+    .btn-pay:active {
+      transform: scale(0.99);
     }
     .btn-pay:disabled {
-      background: #9ca3af;
+      background: #94A3B8;
       cursor: not-allowed;
+      transform: none;
     }
     .trust-footer {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
       margin-top: 16px;
       font-size: 12px;
       color: var(--muted);
@@ -181,7 +271,7 @@
     .success-card {
       display: none;
       text-align: center;
-      padding: 40px 20px;
+      padding: 32px 20px;
     }
     .success-icon {
       width: 64px;
@@ -193,7 +283,23 @@
       align-items: center;
       justify-content: center;
       font-size: 32px;
+      font-weight: 900;
       margin: 0 auto 16px;
+    }
+    .meta-receipt {
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      text-align: left;
+    }
+    .meta-receipt div {
+      margin-bottom: 6px;
+    }
+    .meta-receipt div:last-child {
+      margin-bottom: 0;
     }
   </style>
 </head>
@@ -206,20 +312,48 @@
         <div class="brand-icon">🧠</div>
         <h1>Olodo Student Enrollment</h1>
         <div class="tagline">“We are all olodos until we learn.”</div>
-        <div class="meta-badge" id="level-display">Verified Academic Portal</div>
       </div>
 
+      <!-- Verified Student Academic Profile (Auto-populated from app link) -->
+      <div class="academic-profile-box">
+        <div class="profile-row">
+          <span class="profile-label">Institution:</span>
+          <span class="profile-value" id="disp-institution">University / Higher Institution</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Department:</span>
+          <span class="profile-value" id="disp-department">General Studies</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Level & Session:</span>
+          <span class="profile-value" id="disp-level-sem">200 Level · 1st Semester</span>
+        </div>
+        <div class="profile-row" id="row-target-course" style="display: none;">
+          <span class="profile-label">Target Course:</span>
+          <span class="profile-value">
+            <span class="badge-course" id="disp-course">GST 101</span>
+            <span id="disp-course-title" style="margin-left: 4px; font-weight: normal; color: #475569;"></span>
+          </span>
+        </div>
+        <div class="profile-row" id="row-student-id" style="display: none;">
+          <span class="profile-label">Student ID:</span>
+          <span class="profile-value" id="disp-student-id"></span>
+        </div>
+      </div>
+
+      <!-- Student Email Field -->
       <div class="student-info-box">
-        <label>Student Email (Registered in Olodo Mobile App)</label>
-        <input type="email" id="student-email" placeholder="student@university.edu.ng" required>
+        <label for="student-email">Student Account Email</label>
+        <input type="email" id="student-email" placeholder="student@university.edu.ng" required autocomplete="email">
+        <span class="input-hint">Your pass will instantly activate on this account in your mobile app.</span>
       </div>
 
-      <!-- PLAN 1: FULL TERM / SEMESTER PASS -->
+      <!-- PLAN 1: FULL SEMESTER / TERM PASS -->
       <div class="plan-card selected" id="plan-full" onclick="selectPlan('full')">
         <div class="plan-header">
           <div>
             <div class="plan-title" id="full-pass-title">Full Semester Pass</div>
-            <span class="badge badge-success" style="font-size: 10px;">BEST VALUE · SAVE 60%</span>
+            <span class="plan-tag tag-best">BEST VALUE · UNLOCKS ALL COURSES</span>
           </div>
           <div>
             <div class="plan-price">₦5,000</div>
@@ -227,10 +361,10 @@
         </div>
         <div class="plan-desc" id="full-pass-desc">Unlocks ALL subject question banks for 180 days.</div>
         <ul class="plan-perks">
-          <li id="perk-all-courses">Unlocks all subjects in your academic level</li>
-          <li>Unlimited active recall study & quiz attempts</li>
+          <li id="perk-all-courses">Unlocks all subjects in your academic level & semester</li>
+          <li>Unlimited active recall study rounds & quiz attempts</li>
           <li>100% offline access ready on your phone</li>
-          <li>Verified answer keys and explanations</li>
+          <li>Verified answer keys, explanations & hints</li>
         </ul>
       </div>
 
@@ -239,15 +373,15 @@
         <div class="plan-header">
           <div>
             <div class="plan-title" id="single-pass-title">Single Subject Pass</div>
-            <span class="badge badge-primary" style="font-size: 10px;">TARGETED PREP</span>
+            <span class="plan-tag tag-single">TARGETED PREP</span>
           </div>
           <div>
             <div class="plan-price">₦1,000</div>
           </div>
         </div>
-        <div class="plan-desc" id="single-pass-desc">Unlocks your selected subject for 180 days.</div>
+        <div class="plan-desc" id="single-pass-desc">Unlocks your selected course for 180 days.</div>
         <ul class="plan-perks">
-          <li id="perk-single-course">Unlimited study & quiz attempts for this subject</li>
+          <li id="perk-single-course">Unlimited study & quiz attempts for this course</li>
           <li>100% offline access ready on your phone</li>
           <li>Verified answer keys and explanations</li>
         </ul>
@@ -263,7 +397,7 @@
         <span>·</span>
         <span>📱 USSD / OPay / Palmpay</span>
         <span>·</span>
-        <span>💳 Verve / Visa / MC</span>
+        <span>💳 Verve / Visa / Mastercard</span>
       </div>
 
     </div>
@@ -272,17 +406,21 @@
     <div class="portal-card success-card" id="success-view">
       <div class="success-icon">✓</div>
       <h1 style="color: var(--success); margin-bottom: 8px;">Pass Activated Successfully!</h1>
-      <p style="color: var(--text); font-size: 15px; margin-bottom: 12px;" id="success-detail">
-        Your academic pass is now live.
+      <p style="color: var(--text); font-size: 15px; margin-bottom: 14px;" id="success-detail">
+        Your institutional access is now live on your account.
       </p>
-      <div style="background: var(--bg); border: 1px dashed var(--border); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;">
+      
+      <div class="meta-receipt">
         <div><strong>Transaction Reference:</strong> <span id="success-ref"></span></div>
         <div><strong>Activated Email:</strong> <span id="success-email"></span></div>
+        <div><strong>Pass Type:</strong> <span id="success-plan"></span></div>
       </div>
-      <div style="font-size: 14px; color: var(--muted); margin-bottom: 24px;">
-        📲 <b>Next Step:</b> Automatically returning you to the <b>Olodo App</b>...<br>
-        If the app does not reopen automatically, tap the button below.
+
+      <div style="font-size: 14px; color: var(--muted); margin-bottom: 22px;">
+        📲 <b>Next Step:</b> Returning you automatically to the <b>Olodo App</b>...<br>
+        If the app does not reopen automatically, tap below:
       </div>
+      
       <a id="btn-return-app" href="olodo://activated?status=success" class="btn-pay" style="background: var(--success); text-decoration: none;">
         <span>✓ Return to Olodo App</span>
       </a>
@@ -294,42 +432,56 @@
     </div>
   </div>
 
-  <script type="module">
-    import { db, auth } from "./js/firebase-config.js";
-    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { initializePaystackPayment } from "./js/paystack-config.js";
-
-    // Ensure anonymous Firebase Auth is established so Firestore writes succeed
-    signInAnonymously(auth).catch((err) => {
-      console.warn("Anonymous auth notice:", err);
-    });
-
-    // 1. Parse URL Parameters
+  <!-- Synchronous URL Parsing and UI Setup (Runs instantly without waiting for network/modules) -->
+  <script>
+    // 1. Extract query parameters from URL
     const params = new URLSearchParams(window.location.search);
-    const paramEmail = params.get("email") || "";
-    const paramCourse = params.get("course") || "";
-    const paramLevel = params.get("level") || "General";
-    const paramSemester = params.get("semester") || params.get("period") || "1st Semester";
+    const paramEmail = (params.get("email") || "").trim();
+    const paramStudentId = (params.get("studentId") || "").trim();
+    const paramInstitution = (params.get("institution") || "University / Higher Institution").trim();
+    const paramDepartment = (params.get("department") || "General Studies").trim();
+    const paramCourse = (params.get("course") || "").trim();
+    const paramCourseTitle = (params.get("courseTitle") || "").trim();
+    const paramLevel = (params.get("level") || "200 Level").trim();
+    const paramSemester = (params.get("semester") || params.get("period") || "1st Semester").trim();
 
+    // 2. Pre-fill student email input
     const emailInput = document.getElementById("student-email");
-    if (paramEmail) emailInput.value = paramEmail;
-
-    // Display level & course labels
-    const isTerm = paramSemester.toLowerCase().includes("term");
-    const periodName = isTerm ? "Term" : "Semester";
-    document.getElementById("level-display").textContent = `${paramLevel} · ${paramSemester}`;
-    document.getElementById("full-pass-title").textContent = `Full ${periodName} Pass`;
-    document.getElementById("full-pass-desc").textContent = `Unlocks ALL ${paramLevel} subject banks for the entire ${periodName}.`;
-
-    if (paramCourse) {
-      document.getElementById("single-pass-title").textContent = `${paramCourse} Course Pass`;
-      document.getElementById("single-pass-desc").textContent = `Unlocks ${paramCourse} for 180 days of unlimited offline study.`;
-      document.getElementById("perk-single-course").textContent = `Unlocks ${paramCourse} for unlimited study & quizzes`;
+    if (paramEmail && paramEmail !== "student@university.edu.ng") {
+      emailInput.value = paramEmail;
+    } else if (paramEmail) {
+      emailInput.value = paramEmail;
     }
 
-    // 2. Plan Selection Logic
-    let selectedPlan = "full"; // 'full' or 'single'
+    // 3. Render academic profile metadata
+    document.getElementById("disp-institution").textContent = paramInstitution;
+    document.getElementById("disp-department").textContent = paramDepartment;
+    document.getElementById("disp-level-sem").textContent = `${paramLevel} · ${paramSemester}`;
+
+    if (paramCourse) {
+      document.getElementById("row-target-course").style.display = "flex";
+      document.getElementById("disp-course").textContent = paramCourse.toUpperCase();
+      if (paramCourseTitle) {
+        document.getElementById("disp-course-title").textContent = `- ${paramCourseTitle}`;
+      }
+      document.getElementById("single-pass-title").textContent = `${paramCourse.toUpperCase()} Course Pass`;
+      document.getElementById("single-pass-desc").textContent = `Unlocks ${paramCourse.toUpperCase()} question bank for 180 days.`;
+      document.getElementById("perk-single-course").textContent = `Unlimited active recall study & quizzes for ${paramCourse.toUpperCase()}`;
+    }
+
+    if (paramStudentId && !paramStudentId.includes("OLODO/2026/01")) {
+      document.getElementById("row-student-id").style.display = "flex";
+      document.getElementById("disp-student-id").textContent = paramStudentId;
+    }
+
+    const isTerm = paramSemester.toLowerCase().includes("term");
+    const periodName = isTerm ? "Term" : "Semester";
+    document.getElementById("full-pass-title").textContent = `Full ${periodName} Pass`;
+    document.getElementById("full-pass-desc").textContent = `Unlocks ALL ${paramLevel} courses for the entire ${periodName}.`;
+    document.getElementById("perk-all-courses").textContent = `Unlocks all courses in ${paramLevel} (${paramSemester})`;
+
+    // 4. Plan Selection Handler
+    let selectedPlan = "full";
 
     window.selectPlan = function(plan) {
       selectedPlan = plan;
@@ -347,13 +499,34 @@
         label.textContent = "· ₦1,000";
       }
     };
+  </script>
 
-    // 3. Trigger Payment
+  <!-- ES Module: Firestore & Paystack Integration -->
+  <script type="module">
+    import { db, auth } from "./js/firebase-config.js";
+    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { ENV } from "./js/env.js";
+
+    // Establish anonymous Firebase Auth for authenticated Firestore writes
+    signInAnonymously(auth).catch((err) => {
+      console.warn("Anonymous auth notice:", err);
+    });
+
+    const PAYSTACK_KEY = (typeof ENV !== "undefined" && ENV?.PAYSTACK_PUBLIC_KEY)
+      ? ENV.PAYSTACK_PUBLIC_KEY
+      : (window.ENV?.PAYSTACK_PUBLIC_KEY || "pk_test_3a3d78b430a8f283dc8173c98876cf3a4cc2aa36");
+
     window.triggerPayment = function() {
       const email = emailInput.value.trim();
       if (!email || !email.includes("@")) {
-        alert("Please enter your registered student email address so we can activate your pass.");
+        alert("Please enter a valid student email address so we can activate your pass.");
         emailInput.focus();
+        return;
+      }
+
+      if (typeof PaystackPop === "undefined") {
+        alert("Paystack payment library is loading. Please check your internet connection and try again in 5 seconds.");
         return;
       }
 
@@ -365,24 +538,36 @@
       btn.disabled = true;
       btn.innerHTML = "<span>Opening Paystack...</span>";
 
-      initializePaystackPayment({
+      const handler = PaystackPop.setup({
+        key: PAYSTACK_KEY,
         email: email,
-        amountInNaira: amount,
+        amount: amount * 100, // Amount in Kobo
+        currency: "NGN",
+        channels: ["card", "bank", "ussd", "qr", "mobile_money", "bank_transfer"],
         metadata: {
-          passType: passType,
-          courseCode: (paramCourse || "All").toUpperCase(),
-          level: paramLevel,
-          semester: paramSemester,
+          custom_fields: [
+            { display_name: "Student Email", variable_name: "student_email", value: email },
+            { display_name: "Student ID", variable_name: "student_id", value: paramStudentId },
+            { display_name: "Pass Type", variable_name: "pass_type", value: passType },
+            { display_name: "Course Code", variable_name: "course_code", value: (paramCourse || "All").toUpperCase() },
+            { display_name: "Institution", variable_name: "institution", value: paramInstitution },
+            { display_name: "Department", variable_name: "department", value: paramDepartment },
+            { display_name: "Level", variable_name: "academic_level", value: paramLevel },
+            { display_name: "Semester", variable_name: "semester", value: paramSemester },
+          ],
         },
-        onSuccess: async function(response) {
-          // Construct deep-link return URL to reopen Olodo app immediately
+        callback: async function(response) {
+          // Construct deep link return URL to automatically reopen Olodo app
           const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(response.reference)}`;
 
-          // 1. Record purchase to Firestore
+          // 1. Record purchase into Firestore purchases collection
           try {
             await addDoc(collection(db, "purchases"), {
               userEmail: email.toLowerCase(),
               userId: email.toLowerCase(),
+              studentId: paramStudentId || "",
+              institution: paramInstitution,
+              department: paramDepartment,
               level: paramLevel,
               semester: paramSemester,
               courseCode: (paramCourse || "").toUpperCase(),
@@ -398,14 +583,17 @@
             console.error("Error logging purchase to Firestore:", e);
           }
 
-          // 2. Switch to success confirmation view
+          // 2. Switch UI to success confirmation view
           document.getElementById("checkout-view").style.display = "none";
           document.getElementById("success-view").style.display = "block";
           document.getElementById("success-ref").textContent = response.reference;
           document.getElementById("success-email").textContent = email;
-          document.getElementById("success-detail").textContent = selectedPlan === "full" 
-            ? `Full ${periodName} Pass activated for ${paramLevel}.`
-            : `Single Pass activated for ${paramCourse || "your course"}.`;
+          document.getElementById("success-plan").textContent = selectedPlan === "full"
+            ? `Full Semester Pass (${paramLevel})`
+            : `Single Course Pass (${paramCourse.toUpperCase()})`;
+          document.getElementById("success-detail").textContent = selectedPlan === "full"
+            ? `Full access activated for ${paramInstitution} · ${paramLevel}.`
+            : `Single Pass activated for ${paramCourse.toUpperCase()}.`;
 
           // 3. Configure return button and trigger automatic deep-link redirect to Olodo App
           const returnBtn = document.getElementById("btn-return-app");
@@ -413,7 +601,7 @@
             returnBtn.href = returnUrl;
           }
 
-          // Automatically navigate back to Olodo mobile app after 1.2s
+          // Automatically launch Olodo app after 1.2s
           setTimeout(() => {
             window.location.href = returnUrl;
           }, 1200);
@@ -423,6 +611,8 @@
           btn.innerHTML = `<span>🔒 Pay with Paystack</span><span>· ₦${amount.toLocaleString()}</span>`;
         }
       });
+
+      handler.openIframe();
     };
   </script>
 
