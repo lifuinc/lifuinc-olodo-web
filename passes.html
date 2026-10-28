@@ -280,12 +280,12 @@
         <div><strong>Activated Email:</strong> <span id="success-email"></span></div>
       </div>
       <div style="font-size: 14px; color: var(--muted); margin-bottom: 24px;">
-        📲 <b>Next Step:</b> Switch back to the <b>Olodo App</b> on your phone.<br>
-        Pull down to refresh your dashboard and start studying!
+        📲 <b>Next Step:</b> Automatically returning you to the <b>Olodo App</b>...<br>
+        If the app does not reopen automatically, tap the button below.
       </div>
-      <button class="btn-pay" style="background: var(--success);" onclick="window.close()">
+      <a id="btn-return-app" href="olodo://activated?status=success" class="btn-pay" style="background: var(--success); text-decoration: none;">
         <span>✓ Return to Olodo App</span>
-      </button>
+      </a>
     </div>
 
     <div style="text-align: center; margin-top: 24px; font-size: 12px; color: var(--muted);">
@@ -295,9 +295,15 @@
   </div>
 
   <script type="module">
-    import { db } from "./js/firebase-config.js";
+    import { db, auth } from "./js/firebase-config.js";
     import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { initializePaystackPayment } from "./js/paystack-config.js";
+
+    // Ensure anonymous Firebase Auth is established so Firestore writes succeed
+    signInAnonymously(auth).catch((err) => {
+      console.warn("Anonymous auth notice:", err);
+    });
 
     // 1. Parse URL Parameters
     const params = new URLSearchParams(window.location.search);
@@ -364,18 +370,22 @@
         amountInNaira: amount,
         metadata: {
           passType: passType,
-          courseCode: paramCourse || "All",
+          courseCode: (paramCourse || "All").toUpperCase(),
           level: paramLevel,
           semester: paramSemester,
         },
         onSuccess: async function(response) {
-          // Record purchase to Firestore
+          // Construct deep-link return URL to reopen Olodo app immediately
+          const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(response.reference)}`;
+
+          // 1. Record purchase to Firestore
           try {
             await addDoc(collection(db, "purchases"), {
               userEmail: email.toLowerCase(),
               userId: email.toLowerCase(),
               level: paramLevel,
               semester: paramSemester,
+              courseCode: (paramCourse || "").toUpperCase(),
               type: passType,
               price: amount.toString(),
               reference: response.reference,
@@ -384,20 +394,29 @@
               purchasedAt: serverTimestamp(),
               expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
             });
-
-            // Switch to success view
-            document.getElementById("checkout-view").style.display = "none";
-            document.getElementById("success-view").style.display = "block";
-            document.getElementById("success-ref").textContent = response.reference;
-            document.getElementById("success-email").textContent = email;
-            document.getElementById("success-detail").textContent = selectedPlan === "full" 
-              ? `Full ${periodName} Pass activated for ${paramLevel}.`
-              : `Single Pass activated for ${paramCourse || "your course"}.`;
-
           } catch (e) {
-            console.error("Error logging purchase:", e);
-            alert("Payment successful! Reference: " + response.reference + ". Please return to Olodo app.");
+            console.error("Error logging purchase to Firestore:", e);
           }
+
+          // 2. Switch to success confirmation view
+          document.getElementById("checkout-view").style.display = "none";
+          document.getElementById("success-view").style.display = "block";
+          document.getElementById("success-ref").textContent = response.reference;
+          document.getElementById("success-email").textContent = email;
+          document.getElementById("success-detail").textContent = selectedPlan === "full" 
+            ? `Full ${periodName} Pass activated for ${paramLevel}.`
+            : `Single Pass activated for ${paramCourse || "your course"}.`;
+
+          // 3. Configure return button and trigger automatic deep-link redirect to Olodo App
+          const returnBtn = document.getElementById("btn-return-app");
+          if (returnBtn) {
+            returnBtn.href = returnUrl;
+          }
+
+          // Automatically navigate back to Olodo mobile app after 1.2s
+          setTimeout(() => {
+            window.location.href = returnUrl;
+          }, 1200);
         },
         onClose: function() {
           btn.disabled = false;
