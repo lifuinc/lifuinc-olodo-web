@@ -6,9 +6,8 @@
   <title>Olodo Pass Activation | Official Student Portal</title>
   <meta name="description" content="Activate your Olodo student pass for unlimited offline active recall study and quizzes.">
   <link rel="stylesheet" href="css/styles.css">
-  <!-- Paystack Inline Checkout SDKs (Modern v2 with v1 fallback) -->
+  <!-- Paystack Inline Checkout SDK (Modern v2) -->
   <script src="https://js.paystack.co/v2/inline.js"></script>
-  <script src="https://js.paystack.co/v1/inline.js"></script>
   <style>
     :root {
       --primary: #1E3A8A;
@@ -541,7 +540,7 @@
       }
 
       async function onPaymentSuccess(response) {
-        const reference = response.reference || paymentRef;
+        const reference = response?.reference || response?.trxref || paymentRef;
         const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(reference)}`;
 
         // 1. Record purchase into Firestore purchases collection
@@ -591,58 +590,47 @@
         }, 1200);
       }
 
-      const checkoutConfig = {
-        key: PAYSTACK_KEY,
-        email: email,
-        amount: amount * 100, // Amount in Kobo
-        currency: "NGN",
-        ref: paymentRef,
-        metadata: {
-          custom_fields: [
-            { display_name: "Student Email", variable_name: "student_email", value: email },
-            { display_name: "Student ID", variable_name: "student_id", value: paramStudentId },
-            { display_name: "Pass Type", variable_name: "pass_type", value: passType },
-            { display_name: "Course Code", variable_name: "course_code", value: (paramCourse || "All").toUpperCase() },
-            { display_name: "Institution", variable_name: "institution", value: paramInstitution },
-            { display_name: "Department", variable_name: "department", value: paramDepartment },
-            { display_name: "Level", variable_name: "academic_level", value: paramLevel },
-            { display_name: "Semester", variable_name: "semester", value: paramSemester },
-          ],
-        },
-        callback: onPaymentSuccess,
-        onSuccess: onPaymentSuccess,
-        onClose: resetPayButton,
-        onCancel: resetPayButton,
-      };
+      if (typeof PaystackPop === "undefined") {
+        resetPayButton();
+        alert("Paystack payment library is loading. Please check your internet connection and try again in a few seconds.");
+        return;
+      }
 
       try {
-        // Option A: Modern Paystack v2 Popup
-        if (typeof PaystackPop !== "undefined" && typeof PaystackPop === "function") {
-          try {
-            const popup = new PaystackPop();
-            if (typeof popup.newTransaction === "function") {
-              popup.newTransaction(checkoutConfig);
-              return;
-            }
-          } catch (v2Err) {
-            console.warn("Paystack v2 initialization attempt:", v2Err);
+        const popup = new PaystackPop();
+        popup.newTransaction({
+          key: PAYSTACK_KEY,
+          email: email,
+          amount: amount * 100, // Amount in Kobo (5000 NGN = 500000 kobo, 1000 NGN = 100000 kobo)
+          currency: "NGN",
+          reference: paymentRef,
+          metadata: {
+            custom_fields: [
+              { display_name: "Student Email", variable_name: "student_email", value: email },
+              { display_name: "Student ID", variable_name: "student_id", value: paramStudentId },
+              { display_name: "Pass Type", variable_name: "pass_type", value: passType },
+              { display_name: "Course Code", variable_name: "course_code", value: (paramCourse || "All").toUpperCase() },
+              { display_name: "Institution", variable_name: "institution", value: paramInstitution },
+              { display_name: "Department", variable_name: "department", value: paramDepartment },
+              { display_name: "Level", variable_name: "academic_level", value: paramLevel },
+              { display_name: "Semester", variable_name: "semester", value: paramSemester },
+            ],
+          },
+          onSuccess: function(transaction) {
+            onPaymentSuccess(transaction);
+          },
+          onCancel: function() {
+            resetPayButton();
+          },
+          onError: function(err) {
+            console.error("Paystack transaction error:", err);
+            resetPayButton();
           }
-        }
-
-        // Option B: Legacy Paystack v1 Popup fallback
-        if (typeof PaystackPop !== "undefined" && typeof PaystackPop.setup === "function") {
-          const handler = PaystackPop.setup(checkoutConfig);
-          if (handler && typeof handler.openIframe === "function") {
-            handler.openIframe();
-            return;
-          }
-        }
-
-        throw new Error("Paystack checkout library could not be initialized.");
+        });
       } catch (err) {
-        console.error("Paystack Checkout Error:", err);
+        console.error("Paystack Modal Initialization Error:", err);
         resetPayButton();
-        alert("Unable to open Paystack payment window. Please check your internet connection and verify that your browser is not blocking popups.");
+        alert("Unable to open Paystack modal: " + (err?.message || "Please refresh and try again."));
       }
     };
   </script>
