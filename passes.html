@@ -6,7 +6,8 @@
   <title>Olodo Pass Activation | Official Student Portal</title>
   <meta name="description" content="Activate your Olodo student pass for unlimited offline active recall study and quizzes.">
   <link rel="stylesheet" href="css/styles.css">
-  <!-- Paystack Inline JS (Official v1 inline checkout) -->
+  <!-- Paystack Inline Checkout SDKs (Modern v2 with v1 fallback) -->
+  <script src="https://js.paystack.co/v2/inline.js"></script>
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <style>
     :root {
@@ -525,25 +526,77 @@
         return;
       }
 
-      if (typeof PaystackPop === "undefined") {
-        alert("Paystack payment library is loading. Please check your internet connection and try again in 5 seconds.");
-        return;
-      }
-
       const amount = selectedPlan === "full" ? 5000 : 1000;
       const cleanCourse = (paramCourse || "course").toLowerCase().replace(/[^a-z0-9]/g, "");
       const passType = selectedPlan === "full" ? "semester_pass_180days" : `single_course_${cleanCourse}`;
+      const paymentRef = "OLODO_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
 
       const btn = document.getElementById("btn-pay-now");
       btn.disabled = true;
       btn.innerHTML = "<span>Opening Paystack...</span>";
 
-      const handler = PaystackPop.setup({
+      function resetPayButton() {
+        btn.disabled = false;
+        btn.innerHTML = `<span>🔒 Pay with Paystack</span><span>· ₦${amount.toLocaleString()}</span>`;
+      }
+
+      async function onPaymentSuccess(response) {
+        const reference = response.reference || paymentRef;
+        const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(reference)}`;
+
+        // 1. Record purchase into Firestore purchases collection
+        try {
+          await addDoc(collection(db, "purchases"), {
+            userEmail: email.toLowerCase(),
+            userId: email.toLowerCase(),
+            studentId: paramStudentId || "",
+            institution: paramInstitution,
+            department: paramDepartment,
+            level: paramLevel,
+            semester: paramSemester,
+            courseCode: (paramCourse || "").toUpperCase(),
+            type: passType,
+            price: amount.toString(),
+            reference: reference,
+            channel: "paystack_web",
+            status: "verified",
+            purchasedAt: serverTimestamp(),
+            expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
+          });
+        } catch (e) {
+          console.error("Error logging purchase to Firestore:", e);
+        }
+
+        // 2. Switch UI to success confirmation view
+        document.getElementById("checkout-view").style.display = "none";
+        document.getElementById("success-view").style.display = "block";
+        document.getElementById("success-ref").textContent = reference;
+        document.getElementById("success-email").textContent = email;
+        document.getElementById("success-plan").textContent = selectedPlan === "full"
+          ? `Full Semester Pass (${paramLevel})`
+          : `Single Course Pass (${paramCourse.toUpperCase()})`;
+        document.getElementById("success-detail").textContent = selectedPlan === "full"
+          ? `Full access activated for ${paramInstitution} · ${paramLevel}.`
+          : `Single Pass activated for ${paramCourse.toUpperCase()}.`;
+
+        // 3. Configure return button and trigger automatic deep-link redirect to Olodo App
+        const returnBtn = document.getElementById("btn-return-app");
+        if (returnBtn) {
+          returnBtn.href = returnUrl;
+        }
+
+        // Automatically launch Olodo app after 1.2s
+        setTimeout(() => {
+          window.location.href = returnUrl;
+        }, 1200);
+      }
+
+      const checkoutConfig = {
         key: PAYSTACK_KEY,
         email: email,
         amount: amount * 100, // Amount in Kobo
         currency: "NGN",
-        channels: ["card", "bank", "ussd", "qr", "mobile_money", "bank_transfer"],
+        ref: paymentRef,
         metadata: {
           custom_fields: [
             { display_name: "Student Email", variable_name: "student_email", value: email },
@@ -556,63 +609,41 @@
             { display_name: "Semester", variable_name: "semester", value: paramSemester },
           ],
         },
-        callback: async function(response) {
-          // Construct deep link return URL to automatically reopen Olodo app
-          const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(response.reference)}`;
+        callback: onPaymentSuccess,
+        onSuccess: onPaymentSuccess,
+        onClose: resetPayButton,
+        onCancel: resetPayButton,
+      };
 
-          // 1. Record purchase into Firestore purchases collection
+      try {
+        // Option A: Modern Paystack v2 Popup
+        if (typeof PaystackPop !== "undefined" && typeof PaystackPop === "function") {
           try {
-            await addDoc(collection(db, "purchases"), {
-              userEmail: email.toLowerCase(),
-              userId: email.toLowerCase(),
-              studentId: paramStudentId || "",
-              institution: paramInstitution,
-              department: paramDepartment,
-              level: paramLevel,
-              semester: paramSemester,
-              courseCode: (paramCourse || "").toUpperCase(),
-              type: passType,
-              price: amount.toString(),
-              reference: response.reference,
-              channel: "paystack_web",
-              status: "verified",
-              purchasedAt: serverTimestamp(),
-              expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-            });
-          } catch (e) {
-            console.error("Error logging purchase to Firestore:", e);
+            const popup = new PaystackPop();
+            if (typeof popup.newTransaction === "function") {
+              popup.newTransaction(checkoutConfig);
+              return;
+            }
+          } catch (v2Err) {
+            console.warn("Paystack v2 initialization attempt:", v2Err);
           }
-
-          // 2. Switch UI to success confirmation view
-          document.getElementById("checkout-view").style.display = "none";
-          document.getElementById("success-view").style.display = "block";
-          document.getElementById("success-ref").textContent = response.reference;
-          document.getElementById("success-email").textContent = email;
-          document.getElementById("success-plan").textContent = selectedPlan === "full"
-            ? `Full Semester Pass (${paramLevel})`
-            : `Single Course Pass (${paramCourse.toUpperCase()})`;
-          document.getElementById("success-detail").textContent = selectedPlan === "full"
-            ? `Full access activated for ${paramInstitution} · ${paramLevel}.`
-            : `Single Pass activated for ${paramCourse.toUpperCase()}.`;
-
-          // 3. Configure return button and trigger automatic deep-link redirect to Olodo App
-          const returnBtn = document.getElementById("btn-return-app");
-          if (returnBtn) {
-            returnBtn.href = returnUrl;
-          }
-
-          // Automatically launch Olodo app after 1.2s
-          setTimeout(() => {
-            window.location.href = returnUrl;
-          }, 1200);
-        },
-        onClose: function() {
-          btn.disabled = false;
-          btn.innerHTML = `<span>🔒 Pay with Paystack</span><span>· ₦${amount.toLocaleString()}</span>`;
         }
-      });
 
-      handler.openIframe();
+        // Option B: Legacy Paystack v1 Popup fallback
+        if (typeof PaystackPop !== "undefined" && typeof PaystackPop.setup === "function") {
+          const handler = PaystackPop.setup(checkoutConfig);
+          if (handler && typeof handler.openIframe === "function") {
+            handler.openIframe();
+            return;
+          }
+        }
+
+        throw new Error("Paystack checkout library could not be initialized.");
+      } catch (err) {
+        console.error("Paystack Checkout Error:", err);
+        resetPayButton();
+        alert("Unable to open Paystack payment window. Please check your internet connection and verify that your browser is not blocking popups.");
+      }
     };
   </script>
 

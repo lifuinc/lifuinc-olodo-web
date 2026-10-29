@@ -9,6 +9,22 @@
       "run_portal.bat",
       "deploy_to_firebase.bat",
       "functions/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/generateQuestions",
+        "function": {
+          "functionId": "generateQuestions",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/paystackWebhook",
+        "function": {
+          "functionId": "paystackWebhook",
+          "region": "us-central1"
+        }
+      }
     ]
   },
   "functions": [
