@@ -1355,12 +1355,6 @@ function initAIGenerator() {
       return;
     }
 
-    const key = ai.getApiKey();
-    if (!key) {
-      alert("Platform AI key is not configured yet. Please paste your GEMINI_API_KEY into js/env.js (or .env).");
-      return;
-    }
-
     startBtn.disabled = true;
     startBtn.style.display = "none";
     stopBtn.style.display = "inline-flex";
