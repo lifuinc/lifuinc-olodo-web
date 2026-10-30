@@ -770,6 +770,10 @@ function renderCourses() {
         ? `<span class="badge badge-success">✓ Live in App</span>`
         : `<span class="badge badge-accent">⏳ Pending Vetting</span>`;
 
+      const sharedBadge = (c.departments && c.departments.length > 1)
+        ? `<span class="badge badge-primary" style="font-size: 10px; padding: 1px 6px; cursor: pointer;" onclick="openShareModal('${c.docId}')" title="Shared with: ${c.departments.join(', ')}">+${c.departments.length - 1} depts</span>`
+        : "";
+
       return `
         <tr>
           <td>
@@ -778,7 +782,10 @@ function renderCourses() {
           </td>
           <td>
             <div>${c.institution || "School"}</div>
-            <div style="font-size: 11.5px; color: var(--muted);">${c.department || "Core"}</div>
+            <div style="font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+              <span>${c.department || "Core"}</span>
+              ${sharedBadge}
+            </div>
           </td>
           <td>
             <div>${c.level || "Class"}</div>
@@ -792,8 +799,9 @@ function renderCourses() {
           <td>${statusBadge}</td>
           <td>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-outline btn-sm" onclick="editCourse('${c.docId}')">Edit / Update</button>
-              <button class="btn btn-outline btn-sm" onclick="deleteCourse('${c.docId}')" style="color: #dc2626; border-color: #fca5a5;" title="Delete this question bank">🗑️ Delete</button>
+              <button class="btn btn-outline btn-sm" onclick="editCourse('${c.docId}')">Edit</button>
+              <button class="btn btn-outline btn-sm" onclick="openShareModal('${c.docId}')" style="color: var(--primary); border-color: var(--primary);" title="Share with other departments in this school">🔗 Share</button>
+              <button class="btn btn-outline btn-sm" onclick="deleteCourse('${c.docId}')" style="color: #dc2626; border-color: #fca5a5;" title="Delete this question bank">🗑️</button>
             </div>
           </td>
         </tr>
@@ -819,13 +827,15 @@ function renderCourses() {
           </div>
           <div class="feed-card-body">
             <div><b>Class / Level:</b> ${c.level} · ${c.period || c.semester}</div>
+            <div><b>Department:</b> ${c.department || "Core"} ${(c.departments && c.departments.length > 1) ? `<span class="badge badge-primary" style="font-size: 10px; margin-left: 4px;">+${c.departments.length - 1} shared</span>` : ''}</div>
             <div><b>Questions:</b> ${c.totalQuestions || 200} Qs (v${c.version || 1}) ${c.hasExplanations ? '· <span style="color: var(--success);">★ Explanations Included</span>' : ''}</div>
           </div>
           <div class="feed-card-footer">
             <span style="font-size: 12px; color: var(--muted);">${c.academicSession || "2025/2026"}</span>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-outline btn-sm" onclick="editCourse('${c.docId}')">Edit / Update</button>
-              <button class="btn btn-outline btn-sm" onclick="deleteCourse('${c.docId}')" style="color: #dc2626; border-color: #fca5a5;" title="Delete this question bank">🗑️ Delete</button>
+              <button class="btn btn-outline btn-sm" onclick="editCourse('${c.docId}')">Edit</button>
+              <button class="btn btn-outline btn-sm" onclick="openShareModal('${c.docId}')" style="color: var(--primary); border-color: var(--primary);">🔗 Share</button>
+              <button class="btn btn-outline btn-sm" onclick="deleteCourse('${c.docId}')" style="color: #dc2626; border-color: #fca5a5;">🗑️</button>
             </div>
           </div>
         </div>
@@ -915,6 +925,128 @@ window.deleteCourse = async function (docId) {
     alert("Error deleting course: " + err.message);
   }
 };
+
+// =========================================================================
+// MULTI-DEPARTMENT COURSE SHARING LOGIC
+// =========================================================================
+let activeSharingCourse = null;
+let activeSharingDepts = [];
+
+window.openShareModal = function (docId) {
+  const found = currentCourses.find((c) => c.docId === docId);
+  if (!found) {
+    alert("Course not found.");
+    return;
+  }
+
+  activeSharingCourse = found;
+  const primaryDept = found.department || "General Studies";
+  activeSharingDepts = Array.isArray(found.departments) && found.departments.length > 0
+    ? [...found.departments]
+    : [primaryDept];
+  if (!activeSharingDepts.includes(primaryDept)) {
+    activeSharingDepts.unshift(primaryDept);
+  }
+
+  const modal = $("#share-dept-modal");
+  if (!modal) return;
+
+  $("#share-course-title").textContent = `${found.code || "Course"} · ${found.title || "Subject Title"}`;
+  $("#share-course-meta").textContent = `${found.institution || "School"} · ${found.level || "Class"} · ${found.period || found.semester || "Semester"}`;
+  $("#share-course-orig-dept").textContent = primaryDept;
+
+  renderSharedDeptsList();
+  modal.showModal();
+};
+
+function renderSharedDeptsList() {
+  const container = $("#share-current-depts-list");
+  if (!container || !activeSharingCourse) return;
+
+  const primaryDept = activeSharingCourse.department || "General Studies";
+
+  container.innerHTML = activeSharingDepts.map((d) => {
+    const isPrimary = d === primaryDept;
+    if (isPrimary) {
+      return `
+        <span class="badge badge-primary" style="font-size: 12px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 6px;">
+          🏛️ ${d} <span style="font-size: 10px; opacity: 0.85;">(Primary)</span>
+        </span>
+      `;
+    }
+    const escaped = d.replace(/'/g, "\\'");
+    return `
+      <span class="badge badge-success" style="font-size: 12px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 6px; background: var(--success-bg); color: var(--success); border: 1px solid var(--success);">
+        ✓ ${d}
+        <button type="button" onclick="removeSharedDept('${escaped}')" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 12px; padding: 0 2px; line-height: 1;" title="Remove this department">✕</button>
+      </span>
+    `;
+  }).join("");
+
+  // Refresh target department dropdown options
+  const tierKey = activeSharingCourse.tier || "tertiary";
+  const tierCfg = TIERS_CONFIG[tierKey] || TIERS_CONFIG.tertiary;
+  const deptSelect = $("#share-target-dept-select");
+  if (deptSelect) {
+    const availableDepts = (tierCfg.departments || []).filter(
+      (d) => !activeSharingDepts.includes(d)
+    );
+    deptSelect.innerHTML = availableDepts.length > 0
+      ? availableDepts.map((d) => `<option value="${d}">${d}</option>`).join("")
+      : `<option value="" disabled>All available departments linked</option>`;
+  }
+}
+
+window.removeSharedDept = function (dept) {
+  if (!activeSharingCourse) return;
+  const primaryDept = activeSharingCourse.department || "General Studies";
+  if (dept === primaryDept) {
+    alert("Cannot remove the primary origin department.");
+    return;
+  }
+  activeSharingDepts = activeSharingDepts.filter((d) => d !== dept);
+  renderSharedDeptsList();
+};
+
+function initShareDeptListeners() {
+  $("#btn-close-share-modal")?.addEventListener("click", () => $("#share-dept-modal")?.close());
+  $("#btn-cancel-shared-depts")?.addEventListener("click", () => $("#share-dept-modal")?.close());
+
+  $("#btn-add-shared-dept")?.addEventListener("click", () => {
+    const deptSelect = $("#share-target-dept-select");
+    const val = deptSelect?.value?.trim();
+    if (!val || val.startsWith("All ")) return;
+    if (!activeSharingDepts.includes(val)) {
+      activeSharingDepts.push(val);
+      renderSharedDeptsList();
+    }
+  });
+
+  $("#btn-save-shared-depts")?.addEventListener("click", async () => {
+    if (!activeSharingCourse) return;
+    const saveBtn = $("#btn-save-shared-depts");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
+    try {
+      await setDoc(
+        doc(db, "courses", activeSharingCourse.docId),
+        { departments: activeSharingDepts },
+        { merge: true }
+      );
+
+      activeSharingCourse.departments = [...activeSharingDepts];
+      $("#share-dept-modal")?.close();
+      renderCourses();
+      alert(`✓ Success! "${activeSharingCourse.code}" is now linked to ${activeSharingDepts.length} department(s) and immediately accessible to students in those departments.`);
+    } catch (err) {
+      alert("Error saving shared departments: " + err.message);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "💾 Save & Update Access";
+    }
+  });
+}
 
 // ==========================================
 // 5. BULK QUESTION PARSER & PUBLISHING
@@ -1109,6 +1241,9 @@ function initParser() {
       tier,
       institution,
       department,
+      departments: existing && Array.isArray(existing.departments) && existing.departments.length > 0
+        ? (existing.departments.includes(department) ? existing.departments : [department, ...existing.departments])
+        : [department],
       level,
       semester: period, // For backwards compatibility with mobile app
       period,
@@ -2041,4 +2176,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initAIGenerator();
   initHandover();
   initSimulatorAndBank();
+  initShareDeptListeners();
 });

@@ -165,6 +165,46 @@
       <div id="preview-modal-content" style="max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;"></div>
     </dialog>
 
+    <!-- SHARE / DISTRIBUTE COURSE TO OTHER DEPARTMENTS MODAL -->
+    <dialog class="modal" id="share-dept-modal" style="max-width: 580px;">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Distribute Across Departments</div>
+          <div style="font-size: 12.5px; color: var(--muted);" id="share-modal-sub">Share this existing question bank with other departments</div>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-close-share-modal">✕</button>
+      </div>
+
+      <div style="margin-bottom: 16px; padding: 12px 14px; background: var(--primary-light); border: 1.5px solid var(--primary); border-radius: 8px;">
+        <div style="font-weight: 800; font-size: 15px; color: var(--primary);" id="share-course-title">Subject Code · Title</div>
+        <div style="font-size: 12.5px; color: var(--text); margin-top: 4px;" id="share-course-meta">School · Level · Semester</div>
+        <div style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">Primary Department: <b id="share-course-orig-dept" style="color: var(--primary);">General</b></div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: block;">Currently Accessible By Departments:</label>
+        <div id="share-current-depts-list" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;"></div>
+      </div>
+
+      <div class="card" style="background: #fff; border: 1.5px dashed var(--border); padding: 14px; margin-bottom: 16px;">
+        <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px; color: var(--text);">➕ Add Another Department:</div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <select id="share-target-dept-select" style="flex: 1; min-width: 220px; font-size: 13.5px; padding: 8px 10px;">
+            <!-- Populated dynamically -->
+          </select>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-add-shared-dept" style="font-weight: 700; padding: 8px 14px;">+ Link Department</button>
+        </div>
+        <div style="font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.4;">
+          💡 <b>Zero Duplication & 0 AI Tokens:</b> Students in newly linked departments will instantly see this question bank in the Olodo mobile app under their department. All student subscriptions credit your educator royalty wallet.
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-outline" id="btn-cancel-shared-depts">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-save-shared-depts" style="font-weight: 700; padding: 8px 18px;">💾 Save & Update Access</button>
+      </div>
+    </dialog>
+
     <!-- ============================================== -->
     <!-- TAB 1: OVERVIEW & REVENUE DASHBOARD            -->
     <!-- ============================================== -->
