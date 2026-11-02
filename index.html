@@ -90,6 +90,11 @@
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
           <span>Nationwide Analytics</span>
         </button>
+
+        <button class="nav-item admin-nav" data-tab="tab-admin-vouchers">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+          <span>Voucher & PIN Engine</span>
+        </button>
       </div>
     </nav>
 
@@ -1012,6 +1017,178 @@
             <div style="color: var(--muted); font-size: 13px; text-align: center; padding: 20px;">Computing leaderboard...</div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SUPER ADMIN TAB 4: VOUCHER & PIN ENGINE        -->
+    <!-- ============================================== -->
+    <section id="tab-admin-vouchers" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">🎟️ Institutional Voucher & PIN Engine</h1>
+          <p class="page-desc">Generate single or bulk activation PINs for students, campus reps, and WhatsApp transfers, or audit self-service Paystack PINs.</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-outline btn-sm" id="btn-refresh-vouchers">🔄 Refresh Registry</button>
+          <button class="btn btn-admin btn-sm" id="btn-export-all-vouchers-csv">📥 Export All PINs CSV</button>
+        </div>
+      </div>
+
+      <!-- Voucher Stat Row -->
+      <div class="grid-cols-4">
+        <div class="stat-card">
+          <div class="stat-label">Total Vouchers Issued</div>
+          <div class="stat-value" id="vouch-stat-total">0</div>
+          <div class="stat-hint">Admin & Self-Service PINs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Available / Active PINs</div>
+          <div class="stat-value" style="color: var(--success);" id="vouch-stat-active">0</div>
+          <div class="stat-hint">Ready for student redemption</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Redeemed Activations</div>
+          <div class="stat-value" style="color: var(--primary);" id="vouch-stat-redeemed">0</div>
+          <div class="stat-hint">Total device redemptions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Voucher Face Value</div>
+          <div class="stat-value" style="color: var(--accent);" id="vouch-stat-value">₦0</div>
+          <div class="stat-hint">Across active & redeemed PINs</div>
+        </div>
+      </div>
+
+      <!-- Voucher Generator Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚡ Generate Student / Campus Activation Voucher(s)</div>
+          <span class="badge badge-admin">Instant Firestore Sync</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+          <div class="form-group">
+            <label>Pass Type & Value</label>
+            <select id="voucher-pass-type">
+              <option value="full" selected>Full Semester / Term Pass (₦5,000 · All Courses)</option>
+              <option value="single_course">Single Subject / Course Pass (₦1,000 · 1 Course)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="voucher-course-group">
+            <label>Target Course Code <span style="font-weight: normal; color: var(--muted);">(Optional)</span></label>
+            <input type="text" id="voucher-course-code" placeholder="Leave blank for any selected course, or e.g. GST 204">
+          </div>
+
+          <div class="form-group">
+            <label>Target Level <span style="font-weight: normal; color: var(--muted);">(Optional)</span></label>
+            <input type="text" id="voucher-level" placeholder="Leave blank for student's current level, or e.g. 200 Level">
+          </div>
+
+          <div class="form-group">
+            <label>Target Semester / Term <span style="font-weight: normal; color: var(--muted);">(Optional)</span></label>
+            <input type="text" id="voucher-semester" placeholder="Leave blank for student's current semester, or e.g. 1st Semester">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 4px;">
+          <div class="form-group">
+            <label>Quantity of PINs to Generate</label>
+            <input type="number" id="voucher-quantity" value="1" min="1" max="200">
+            <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">1 for single student, or up to 200 for campus batch</div>
+          </div>
+
+          <div class="form-group">
+            <label>Max Redemptions per PIN</label>
+            <input type="number" id="voucher-max-uses" value="1" min="1" max="5000">
+            <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">1 for 1 student device, or e.g. 50 for a shared class promo PIN</div>
+          </div>
+
+          <div class="form-group">
+            <label>PIN Prefix or Custom Code</label>
+            <input type="text" id="voucher-prefix" placeholder="e.g. OLODO or NOUN-VIP-2026" value="OLODO">
+            <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">Auto-appends secure 8-char code (e.g. OLODO-8F3K-92A1)</div>
+          </div>
+
+          <div class="form-group">
+            <label>Student Email / Buyer Note</label>
+            <input type="text" id="voucher-note" placeholder="e.g. Chinedu WhatsApp / Bank Transfer">
+            <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">For your audit trail in the table below</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--border);">
+          <div style="font-size: 12.5px; color: var(--muted);">
+            ℹ️ Generated PINs work immediately inside the Olodo mobile app under <b>Unlock Access → Institutional Code</b>.
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-generate-vouchers" style="font-weight: 700; padding: 11px 22px;">
+            🎟️ Generate & Activate Voucher PIN(s)
+          </button>
+        </div>
+
+        <!-- Newly Generated Batch Output Box -->
+        <div id="voucher-batch-output" style="display: none; margin-top: 20px; background: var(--primary-light); border: 2px solid var(--primary); border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <div style="font-weight: 800; font-size: 15px; color: var(--primary);" id="voucher-batch-title">✓ Voucher Generated & Live!</div>
+              <div style="font-size: 12px; color: var(--muted);" id="voucher-batch-subtitle">Share with the student to enter in the Olodo App → Institutional Code tab.</div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-success btn-sm" id="btn-copy-voucher-whatsapp" style="font-weight: 700;">💬 Copy WhatsApp Message</button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-copy-voucher-codes">📋 Copy PIN Code(s)</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-download-batch-csv">📥 Batch CSV</button>
+            </div>
+          </div>
+
+          <div id="voucher-batch-codes-list" style="display: flex; flex-wrap: wrap; gap: 10px; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: monospace; font-size: 15px; font-weight: 800; color: var(--primary); max-height: 220px; overflow-y: auto;"></div>
+        </div>
+      </div>
+
+      <!-- Filter Chips & Search -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+        <div class="filter-chips" id="voucher-filter-chips" style="margin-bottom: 0;">
+          <button class="filter-chip active" data-vouch-filter="all">All Vouchers</button>
+          <button class="filter-chip" data-vouch-filter="active">Active / Available</button>
+          <button class="filter-chip" data-vouch-filter="redeemed">Fully Redeemed</button>
+          <button class="filter-chip" data-vouch-filter="paystack">Self-Service (Paystack)</button>
+          <button class="filter-chip" data-vouch-filter="revoked">Revoked</button>
+        </div>
+        <div style="min-width: 240px;">
+          <input type="text" id="voucher-search-input" placeholder="🔍 Search PIN, email, course, or note..." style="padding: 8px 12px; font-size: 13px;">
+        </div>
+      </div>
+
+      <!-- Live Voucher Registry Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Live Institutional Voucher Registry (`institutional_pins`)</div>
+          <span class="badge badge-primary" id="voucher-count-badge">0 PINs</span>
+        </div>
+
+        <div class="table-responsive desktop-table-only">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Voucher PIN</th>
+                <th>Pass Type & Scope</th>
+                <th>Redemptions</th>
+                <th>Buyer / Redeemed By</th>
+                <th>Channel</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="vouchers-table-body">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--muted); padding: 30px;">
+                  Loading voucher registry from Firestore...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mobile-card-feed" id="vouchers-mobile-feed"></div>
       </div>
     </section>
 

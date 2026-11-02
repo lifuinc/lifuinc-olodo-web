@@ -37,6 +37,9 @@ let allLecturers = [];
 let lastParsedQuestions = [];
 let activeTierFilter = "all";
 let activeVettingFilter = "pending";
+let allVouchers = [];
+let lastGeneratedBatch = [];
+let activeVoucherFilter = "all";
 
 // Educational Tiers Configuration
 const TIERS_CONFIG = {
@@ -1641,7 +1644,8 @@ async function loadAdminData() {
   await Promise.all([
     loadAdminVettingQueue(),
     loadAdminFinancials(),
-    loadAdminAnalytics()
+    loadAdminAnalytics(),
+    loadAdminVouchers()
   ]);
 }
 
@@ -2201,6 +2205,465 @@ function initSimulatorAndBank() {
 }
 
 // ==========================================
+// 11. SUPER ADMIN VOUCHER & PIN ENGINE
+// ==========================================
+function generateRandomBlock(len = 4) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  const randValues = new Uint32Array(len);
+  if (window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(randValues);
+    for (let i = 0; i < len; i++) {
+      out += chars[randValues[i] % chars.length];
+    }
+  } else {
+    for (let i = 0; i < len; i++) {
+      out += chars[Math.floor(Math.random() * chars.length)];
+    }
+  }
+  return out;
+}
+
+function formatWhatsAppVoucherMessage(voucherObj) {
+  const isFull = (voucherObj.type || "full") === "full";
+  const passLabel = isFull
+    ? "Full Semester / Term Pass (All Courses)"
+    : `Single Subject Pass${voucherObj.courseCode ? ` (${voucherObj.courseCode.toUpperCase()})` : ""}`;
+  const scopeParts = [voucherObj.level, voucherObj.semester].filter(Boolean);
+  const scopeLine = scopeParts.length > 0 ? `\n📚 *Target Scope:* ${scopeParts.join(" · ")}` : "";
+
+  return (
+    `🎓 *OLODO OFFICIAL ACTIVATION VOUCHER*\n\n` +
+    `🔑 *Voucher PIN:* \`${voucherObj.pin}\`\n` +
+    `🎟️ *Pass Type:* ${passLabel}${scopeLine}\n` +
+    `⏳ *Validity:* 180 Days (100% Offline Access)\n\n` +
+    `*How to Activate in the Olodo App:*\n` +
+    `1️⃣ Open the *Olodo* mobile app and tap any locked study round (Round 3+) or *Unlock Access*.\n` +
+    `2️⃣ Switch to the *Institutional Code* tab at the top of the screen.\n` +
+    `3️⃣ Enter your PIN: *${voucherObj.pin}* and tap *Verify & Activate PIN*.\n\n` +
+    `_“We are all olodos until we learn.”_ 🧠`
+  );
+}
+
+async function loadAdminVouchers() {
+  try {
+    const snap = await getDocs(collection(db, "institutional_pins"));
+    allVouchers = snap.docs.map((d) => ({
+      pin: d.id,
+      ...d.data()
+    }));
+
+    // Sort newest first by createdAt
+    allVouchers.sort((a, b) => {
+      const ta = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAtMs || 0);
+      const tb = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAtMs || 0);
+      return tb - ta;
+    });
+
+    // Compute stats
+    let totalCount = allVouchers.length;
+    let activeAvailableCount = 0;
+    let totalRedemptions = 0;
+    let totalFaceValue = 0;
+
+    allVouchers.forEach((v) => {
+      const isAct = v.active !== false;
+      const maxR = Number(v.maxRedemptions || 1);
+      const usedR = Number(v.timesRedeemed || 0);
+      if (isAct && usedR < maxR) {
+        activeAvailableCount++;
+      }
+      totalRedemptions += usedR;
+      const unitPrice = Number(v.price || ((v.type || "full") === "full" ? 5000 : 1000));
+      totalFaceValue += unitPrice * Math.max(1, maxR > 50 ? usedR : maxR);
+    });
+
+    if ($("#vouch-stat-total")) $("#vouch-stat-total").textContent = totalCount.toLocaleString();
+    if ($("#vouch-stat-active")) $("#vouch-stat-active").textContent = activeAvailableCount.toLocaleString();
+    if ($("#vouch-stat-redeemed")) $("#vouch-stat-redeemed").textContent = totalRedemptions.toLocaleString();
+    if ($("#vouch-stat-value")) $("#vouch-stat-value").textContent = `₦${totalFaceValue.toLocaleString()}`;
+
+    renderAdminVouchers();
+  } catch (err) {
+    console.warn("Error loading institutional_pins:", err);
+  }
+}
+
+function renderAdminVouchers() {
+  const tableBody = $("#vouchers-table-body");
+  const mobileFeed = $("#vouchers-mobile-feed");
+  const countBadge = $("#voucher-count-badge");
+  if (!tableBody || !mobileFeed) return;
+
+  const queryText = ($("#voucher-search-input")?.value || "").trim().toLowerCase();
+
+  const filtered = allVouchers.filter((v) => {
+    const isAct = v.active !== false;
+    const maxR = Number(v.maxRedemptions || 1);
+    const usedR = Number(v.timesRedeemed || 0);
+    const isExhausted = usedR >= maxR;
+
+    if (activeVoucherFilter === "active" && (!isAct || isExhausted)) return false;
+    if (activeVoucherFilter === "redeemed" && usedR === 0) return false;
+    if (activeVoucherFilter === "paystack" && v.channel !== "paystack_self_service") return false;
+    if (activeVoucherFilter === "revoked" && isAct) return false;
+
+    if (queryText) {
+      const redeemedList = Array.isArray(v.redeemedBy) ? v.redeemedBy.join(" ") : "";
+      const hay = `${v.pin} ${v.type || ""} ${v.courseCode || ""} ${v.level || ""} ${v.semester || ""} ${v.note || ""} ${v.buyerEmail || ""} ${redeemedList}`.toLowerCase();
+      if (!hay.includes(queryText)) return false;
+    }
+    return true;
+  });
+
+  if (countBadge) {
+    countBadge.textContent = `${filtered.length} PIN${filtered.length === 1 ? "" : "s"}`;
+  }
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--muted); padding: 30px;">
+          No vouchers match the current filter. Generate a new voucher above!
+        </td>
+      </tr>
+    `;
+    mobileFeed.innerHTML = `
+      <div style="text-align: center; color: var(--muted); padding: 24px;">
+        No vouchers match the current filter.
+      </div>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = filtered
+    .map((v) => {
+      const isAct = v.active !== false;
+      const maxR = Number(v.maxRedemptions || 1);
+      const usedR = Number(v.timesRedeemed || 0);
+      const isExhausted = usedR >= maxR;
+
+      let statusBadge = `<span class="badge badge-success">✓ Active</span>`;
+      if (!isAct) {
+        statusBadge = `<span class="badge badge-danger">🚫 Revoked</span>`;
+      } else if (isExhausted) {
+        statusBadge = `<span class="badge badge-primary">✓ Redeemed</span>`;
+      } else if (usedR > 0) {
+        statusBadge = `<span class="badge badge-accent">⚡ In Use (${usedR}/${maxR})</span>`;
+      }
+
+      const isFull = (v.type || "full") === "full";
+      const typeLabel = isFull
+        ? `<b style="color: var(--primary);">Full Semester Pass</b> <span style="font-size:11px;color:var(--muted);">(₦5,000)</span>`
+        : `<b style="color: var(--accent);">Single Course Pass</b> <span style="font-size:11px;color:var(--muted);">(₦1,000)</span>`;
+
+      const scopeItems = [
+        v.courseCode ? `Course: <b>${v.courseCode.toUpperCase()}</b>` : (isFull ? "All Courses" : "Any 1 Course"),
+        v.level || "Any Level",
+        v.semester || "Any Semester"
+      ];
+
+      const redeemedEmails = Array.isArray(v.redeemedBy) && v.redeemedBy.length > 0
+        ? v.redeemedBy.join(", ")
+        : "";
+
+      const channelBadge = v.channel === "paystack_self_service"
+        ? `<span class="badge badge-success" style="font-size: 10.5px;">💳 Paystack Web</span>`
+        : `<span class="badge badge-admin" style="font-size: 10.5px;">👑 Admin Engine</span>`;
+
+      return `
+        <tr>
+          <td>
+            <div style="font-family: monospace; font-size: 14px; font-weight: 800; color: var(--primary); letter-spacing: 0.03em;">
+              ${v.pin}
+            </div>
+          </td>
+          <td>
+            <div>${typeLabel}</div>
+            <div style="font-size: 11.5px; color: var(--muted);">${scopeItems.join(" · ")}</div>
+          </td>
+          <td>
+            <b>${usedR}</b> / ${maxR}
+          </td>
+          <td>
+            ${v.note ? `<div style="font-size: 12.5px; font-weight: 600;">${v.note}</div>` : ""}
+            ${v.buyerEmail ? `<div style="font-size: 11.5px; color: var(--primary);">${v.buyerEmail}</div>` : ""}
+            ${redeemedEmails ? `<div style="font-size: 11px; color: var(--success);">Redeemed: ${redeemedEmails}</div>` : `<div style="font-size: 11px; color: var(--muted);">Not redeemed yet</div>`}
+          </td>
+          <td>${channelBadge}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" onclick="copySingleVoucherPin('${v.pin}')" title="Copy PIN">📋 PIN</button>
+              <button class="btn btn-success btn-sm" onclick="copySingleVoucherWhatsApp('${v.pin}')" title="Copy WhatsApp Delivery Text">💬 WhatsApp</button>
+              ${
+                isAct
+                  ? `<button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" onclick="toggleVoucherStatus('${v.pin}', false)">🚫 Revoke</button>`
+                  : `<button class="btn btn-outline btn-sm" style="color: var(--success); border-color: var(--success);" onclick="toggleVoucherStatus('${v.pin}', true)">✓ Activate</button>`
+              }
+              <button class="btn btn-outline btn-sm" style="color: var(--muted);" onclick="deleteVoucherPin('${v.pin}')" title="Delete PIN">🗑</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  mobileFeed.innerHTML = filtered
+    .map((v) => {
+      const isAct = v.active !== false;
+      const maxR = Number(v.maxRedemptions || 1);
+      const usedR = Number(v.timesRedeemed || 0);
+      const isExhausted = usedR >= maxR;
+
+      let statusBadge = `<span class="badge badge-success">✓ Active</span>`;
+      if (!isAct) {
+        statusBadge = `<span class="badge badge-danger">🚫 Revoked</span>`;
+      } else if (isExhausted) {
+        statusBadge = `<span class="badge badge-primary">✓ Redeemed</span>`;
+      }
+
+      const isFull = (v.type || "full") === "full";
+      const redeemedEmails = Array.isArray(v.redeemedBy) && v.redeemedBy.length > 0
+        ? v.redeemedBy.join(", ")
+        : "None yet";
+
+      return `
+        <div class="feed-card">
+          <div class="feed-card-header">
+            <div>
+              <div style="font-family: monospace; font-size: 15px; font-weight: 800; color: var(--primary);">${v.pin}</div>
+              <div style="font-size: 12px; color: var(--muted);">${isFull ? "Full Semester Pass (₦5,000)" : `Single Course Pass (${v.courseCode || "Any 1 Course"})`}</div>
+            </div>
+            ${statusBadge}
+          </div>
+          <div class="feed-card-body">
+            <div><b>Redemptions:</b> ${usedR} / ${maxR}</div>
+            ${v.note ? `<div><b>Note / Buyer:</b> ${v.note}</div>` : ""}
+            <div><b>Redeemed By:</b> ${redeemedEmails}</div>
+          </div>
+          <div class="feed-card-footer">
+            <div style="display: flex; gap: 6px; width: 100%; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="copySingleVoucherPin('${v.pin}')">📋 Copy PIN</button>
+              <button class="btn btn-success btn-sm" style="flex: 1;" onclick="copySingleVoucherWhatsApp('${v.pin}')">💬 WhatsApp</button>
+              ${
+                isAct
+                  ? `<button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" onclick="toggleVoucherStatus('${v.pin}', false)">🚫 Revoke</button>`
+                  : `<button class="btn btn-outline btn-sm" style="color: var(--success); border-color: var(--success);" onclick="toggleVoucherStatus('${v.pin}', true)">✓ Activate</button>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+window.copySingleVoucherPin = async function (pin) {
+  try {
+    await navigator.clipboard.writeText(pin);
+    alert(`✓ Copied PIN to clipboard: ${pin}`);
+  } catch (_) {
+    prompt("Copy Voucher PIN:", pin);
+  }
+};
+
+window.copySingleVoucherWhatsApp = async function (pin) {
+  const found = allVouchers.find((v) => v.pin === pin) || { pin, type: "full" };
+  const msg = formatWhatsAppVoucherMessage(found);
+  try {
+    await navigator.clipboard.writeText(msg);
+    alert(`✓ WhatsApp delivery message for ${pin} copied! You can now paste it directly into WhatsApp.`);
+  } catch (_) {
+    prompt("Copy WhatsApp Message:", msg);
+  }
+};
+
+window.toggleVoucherStatus = async function (pin, makeActive) {
+  const actionWord = makeActive ? "reactivate" : "revoke";
+  if (!confirm(`Are you sure you want to ${actionWord} voucher PIN "${pin}"?`)) return;
+
+  try {
+    await setDoc(doc(db, "institutional_pins", pin), { active: makeActive }, { merge: true });
+    await loadAdminVouchers();
+  } catch (err) {
+    alert(`Error updating voucher: ${err.message}`);
+  }
+};
+
+window.deleteVoucherPin = async function (pin) {
+  if (!confirm(`Permanently delete voucher PIN "${pin}" from Firestore?`)) return;
+  try {
+    await deleteDoc(doc(db, "institutional_pins", pin));
+    await loadAdminVouchers();
+  } catch (err) {
+    alert(`Error deleting voucher: ${err.message}`);
+  }
+};
+
+function initVoucherEngine() {
+  const genBtn = $("#btn-generate-vouchers");
+  const refreshBtn = $("#btn-refresh-vouchers");
+  const searchInput = $("#voucher-search-input");
+  const exportAllBtn = $("#btn-export-all-vouchers-csv");
+
+  refreshBtn?.addEventListener("click", () => loadAdminVouchers());
+  searchInput?.addEventListener("input", () => renderAdminVouchers());
+
+  $$("#voucher-filter-chips .filter-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      $$("#voucher-filter-chips .filter-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeVoucherFilter = chip.getAttribute("data-vouch-filter") || "all";
+      renderAdminVouchers();
+    });
+  });
+
+  genBtn?.addEventListener("click", async () => {
+    const passType = $("#voucher-pass-type")?.value || "full";
+    const courseCode = ($("#voucher-course-code")?.value || "").trim().toUpperCase();
+    const level = ($("#voucher-level")?.value || "").trim();
+    const semester = ($("#voucher-semester")?.value || "").trim();
+    const quantity = Math.min(200, Math.max(1, parseInt($("#voucher-quantity")?.value || "1", 10)));
+    const maxUses = Math.max(1, parseInt($("#voucher-max-uses")?.value || "1", 10));
+    const rawPrefix = ($("#voucher-prefix")?.value || "OLODO").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+    const cleanPrefix = rawPrefix || "OLODO";
+    const note = ($("#voucher-note")?.value || "").trim();
+    const price = passType === "full" ? 5000 : 1000;
+
+    genBtn.disabled = true;
+    const origText = genBtn.textContent;
+    genBtn.textContent = `Generating ${quantity} PIN(s)...`;
+
+    const createdBatch = [];
+    try {
+      for (let i = 0; i < quantity; i++) {
+        let pinCode = "";
+        if (quantity === 1 && cleanPrefix.includes("-") && cleanPrefix.length >= 8 && !allVouchers.some((v) => v.pin === cleanPrefix)) {
+          // Allow custom named code like NOUN-VIP-2026 when generating 1 PIN
+          pinCode = cleanPrefix;
+        } else {
+          const basePrefix = cleanPrefix.split("-")[0] || "OLODO";
+          pinCode = `${basePrefix}-${generateRandomBlock(4)}-${generateRandomBlock(4)}`;
+        }
+
+        const payload = {
+          active: true,
+          type: passType,
+          courseCode: courseCode,
+          level: level,
+          semester: semester,
+          maxRedemptions: maxUses,
+          timesRedeemed: 0,
+          price: price,
+          note: note,
+          buyerEmail: note.includes("@") ? note.toLowerCase() : "",
+          channel: "admin_engine",
+          createdBy: currentUser?.email || SUPER_ADMIN_EMAIL,
+          createdAt: serverTimestamp(),
+          createdAtMs: Date.now(),
+          redeemedBy: []
+        };
+
+        await setDoc(doc(db, "institutional_pins", pinCode), payload);
+        createdBatch.push({ pin: pinCode, ...payload });
+      }
+
+      lastGeneratedBatch = createdBatch;
+
+      // Display batch output card
+      const outputBox = $("#voucher-batch-output");
+      const titleEl = $("#voucher-batch-title");
+      const listEl = $("#voucher-batch-codes-list");
+
+      if (outputBox && listEl) {
+        outputBox.style.display = "block";
+        titleEl.textContent = `✓ Successfully Generated ${createdBatch.length} Live Voucher PIN${createdBatch.length === 1 ? "" : "s"}!`;
+        listEl.innerHTML = createdBatch
+          .map(
+            (item) => `
+            <span style="background: var(--primary-light); border: 1.5px solid var(--primary); padding: 6px 12px; border-radius: 6px; cursor: pointer;" onclick="copySingleVoucherPin('${item.pin}')" title="Click to copy">
+              ${item.pin}
+            </span>
+          `
+          )
+          .join("");
+      }
+
+      await loadAdminVouchers();
+    } catch (err) {
+      alert(`Error generating vouchers: ${err.message}`);
+    } finally {
+      genBtn.disabled = false;
+      genBtn.textContent = origText;
+    }
+  });
+
+  // Batch output actions
+  $("#btn-copy-voucher-whatsapp")?.addEventListener("click", async () => {
+    if (lastGeneratedBatch.length === 0) return;
+    let text = "";
+    if (lastGeneratedBatch.length === 1) {
+      text = formatWhatsAppVoucherMessage(lastGeneratedBatch[0]);
+    } else {
+      const codes = lastGeneratedBatch.map((b, idx) => `${idx + 1}. *${b.pin}*`).join("\n");
+      text =
+        `🎓 *OLODO OFFICIAL ACTIVATION VOUCHERS (${lastGeneratedBatch.length} PINs)*\n\n` +
+        `${codes}\n\n` +
+        `*How to Redeem:* Open the Olodo App → Tap any Course Round 3+ → Choose *Institutional Code* → Enter your PIN.`;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("✓ Copied WhatsApp message to clipboard!");
+    } catch (_) {
+      prompt("Copy WhatsApp Message:", text);
+    }
+  });
+
+  $("#btn-copy-voucher-codes")?.addEventListener("click", async () => {
+    if (lastGeneratedBatch.length === 0) return;
+    const rawCodes = lastGeneratedBatch.map((b) => b.pin).join("\n");
+    try {
+      await navigator.clipboard.writeText(rawCodes);
+      alert(`✓ Copied ${lastGeneratedBatch.length} PIN code(s) to clipboard!`);
+    } catch (_) {
+      prompt("Copy PIN Codes:", rawCodes);
+    }
+  });
+
+  $("#btn-download-batch-csv")?.addEventListener("click", () => {
+    if (lastGeneratedBatch.length === 0) return;
+    exportVouchersToCsv(lastGeneratedBatch, `Olodo_Voucher_Batch_${new Date().toISOString().slice(0, 10)}.csv`);
+  });
+
+  exportAllBtn?.addEventListener("click", () => {
+    if (allVouchers.length === 0) {
+      alert("No vouchers in registry to export.");
+      return;
+    }
+    exportVouchersToCsv(allVouchers, `Olodo_All_Vouchers_${new Date().toISOString().slice(0, 10)}.csv`);
+  });
+}
+
+function exportVouchersToCsv(list, filename) {
+  let csv = "data:text/csv;charset=utf-8,";
+  csv += "Voucher PIN,Pass Type,Price (NGN),Course Code,Level,Semester,Times Redeemed,Max Redemptions,Status,Channel,Note / Buyer,Redeemed By\n";
+  list.forEach((v) => {
+    const isAct = v.active !== false;
+    const status = !isAct ? "Revoked" : (Number(v.timesRedeemed || 0) >= Number(v.maxRedemptions || 1) ? "Redeemed" : "Active");
+    const redeemedBy = Array.isArray(v.redeemedBy) ? v.redeemedBy.join("; ") : "";
+    csv += `"${v.pin}","${v.type || "full"}",${v.price || 5000},"${v.courseCode || "ALL"}","${v.level || "ANY"}","${v.semester || "ANY"}",${v.timesRedeemed || 0},${v.maxRedemptions || 1},"${status}","${v.channel || "admin_engine"}","${(v.note || v.buyerEmail || "").replace(/"/g, '""')}","${redeemedBy}"\n`;
+  });
+  const encodedUri = encodeURI(csv);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ==========================================
 // INITIALIZATION
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
@@ -2212,4 +2675,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initHandover();
   initSimulatorAndBank();
   initShareDeptListeners();
+  initVoucherEngine();
 });

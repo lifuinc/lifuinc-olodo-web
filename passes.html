@@ -416,9 +416,24 @@
         <div><strong>Pass Type:</strong> <span id="success-plan"></span></div>
       </div>
 
-      <div style="font-size: 14px; color: var(--muted); margin-bottom: 22px;">
-        📲 <b>Next Step:</b> Returning you automatically to the <b>Olodo App</b>...<br>
-        If the app does not reopen automatically, tap below:
+      <!-- Self-Service Generated Voucher PIN Box -->
+      <div style="background: #EFF6FF; border: 2px solid #1E3A8A; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
+        <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #1E3A8A; margin-bottom: 6px;">
+          🎟️ Your Instant Activation Voucher PIN
+        </div>
+        <div id="success-voucher-pin" style="font-family: monospace; font-size: 22px; font-weight: 900; color: #0F172A; letter-spacing: 0.06em; background: #FFFFFF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; user-select: all;">
+          OLODO-XXXX-XXXX
+        </div>
+        <button type="button" id="btn-copy-self-pin" onclick="copyGeneratedPin()" style="background: #1E3A8A; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
+          📋 Copy Voucher PIN
+        </button>
+        <div style="font-size: 11.5px; color: #475569; margin-top: 8px; line-height: 1.4;">
+          Save or copy this PIN! You can paste it anytime inside the Olodo App under <b>Unlock Access → Institutional Code</b>.
+        </div>
+      </div>
+
+      <div style="font-size: 14px; color: var(--muted); margin-bottom: 18px;">
+        📲 <b>Next Step:</b> Tap below to return to the <b>Olodo App</b>:
       </div>
       
       <a id="btn-return-app" href="olodo://activated?status=success" class="btn-pay" style="background: var(--success); text-decoration: none;">
@@ -504,7 +519,7 @@
   <!-- ES Module: Firestore & Paystack Integration -->
   <script type="module">
     import { db, auth } from "./js/firebase-config.js";
-    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { collection, doc, setDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { ENV } from "./js/env.js";
 
@@ -512,6 +527,34 @@
     signInAnonymously(auth).catch((err) => {
       console.warn("Anonymous auth notice:", err);
     });
+
+    function generateVoucherBlock(len = 4) {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let out = "";
+      const rand = new Uint32Array(len);
+      if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(rand);
+        for (let i = 0; i < len; i++) out += chars[rand[i] % chars.length];
+      } else {
+        for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return out;
+    }
+
+    window.copyGeneratedPin = async function() {
+      const pinText = (document.getElementById("success-voucher-pin")?.textContent || "").trim();
+      if (!pinText) return;
+      try {
+        await navigator.clipboard.writeText(pinText);
+        const btn = document.getElementById("btn-copy-self-pin");
+        if (btn) {
+          btn.textContent = "✓ PIN Copied to Clipboard!";
+          btn.style.background = "#10B981";
+        }
+      } catch (_) {
+        prompt("Copy your Activation Voucher PIN:", pinText);
+      }
+    };
 
     const PAYSTACK_KEY = (typeof ENV !== "undefined" && ENV?.PAYSTACK_PUBLIC_KEY)
       ? ENV.PAYSTACK_PUBLIC_KEY
@@ -541,9 +584,33 @@
 
       async function onPaymentSuccess(response) {
         const reference = response?.reference || response?.trxref || paymentRef;
-        const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(reference)}`;
+        const generatedPin = `OLODO-${generateVoucherBlock(4)}-${generateVoucherBlock(4)}`;
+        const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(reference)}&pin=${encodeURIComponent(generatedPin)}`;
 
-        // 1. Record purchase into Firestore purchases collection
+        // 1. Create a verified self-service Voucher PIN in Firestore `institutional_pins`
+        try {
+          await setDoc(doc(db, "institutional_pins", generatedPin), {
+            active: true,
+            type: selectedPlan === "full" ? "full" : "single_course",
+            courseCode: selectedPlan === "single" ? (paramCourse || "").toUpperCase() : "",
+            level: paramLevel,
+            semester: paramSemester,
+            maxRedemptions: 1,
+            timesRedeemed: 0,
+            price: amount,
+            note: `Self-Service Paystack (${reference})`,
+            buyerEmail: email.toLowerCase(),
+            reference: reference,
+            channel: "paystack_self_service",
+            createdAt: serverTimestamp(),
+            createdAtMs: Date.now(),
+            redeemedBy: []
+          });
+        } catch (e) {
+          console.error("Error generating self-service PIN in Firestore:", e);
+        }
+
+        // 2. Record purchase into Firestore purchases collection
         try {
           await addDoc(collection(db, "purchases"), {
             userEmail: email.toLowerCase(),
@@ -555,6 +622,7 @@
             semester: paramSemester,
             courseCode: (paramCourse || "").toUpperCase(),
             type: passType,
+            voucherPin: generatedPin,
             price: amount.toString(),
             reference: reference,
             channel: "paystack_web",
@@ -566,28 +634,29 @@
           console.error("Error logging purchase to Firestore:", e);
         }
 
-        // 2. Switch UI to success confirmation view
+        // 3. Switch UI to success confirmation view & display Voucher PIN
         document.getElementById("checkout-view").style.display = "none";
         document.getElementById("success-view").style.display = "block";
         document.getElementById("success-ref").textContent = reference;
         document.getElementById("success-email").textContent = email;
+        document.getElementById("success-voucher-pin").textContent = generatedPin;
         document.getElementById("success-plan").textContent = selectedPlan === "full"
           ? `Full Semester Pass (${paramLevel})`
-          : `Single Course Pass (${paramCourse.toUpperCase()})`;
+          : `Single Course Pass (${(paramCourse || "Selected Course").toUpperCase()})`;
         document.getElementById("success-detail").textContent = selectedPlan === "full"
           ? `Full access activated for ${paramInstitution} · ${paramLevel}.`
-          : `Single Pass activated for ${paramCourse.toUpperCase()}.`;
+          : `Single Pass activated for ${(paramCourse || "Selected Course").toUpperCase()}.`;
 
-        // 3. Configure return button and trigger automatic deep-link redirect to Olodo App
+        // 4. Configure return button and trigger deep-link redirect to Olodo App
         const returnBtn = document.getElementById("btn-return-app");
         if (returnBtn) {
           returnBtn.href = returnUrl;
         }
 
-        // Automatically launch Olodo app after 1.2s
+        // Automatically launch Olodo app after 2.5s (leaving this PIN receipt visible in browser)
         setTimeout(() => {
           window.location.href = returnUrl;
-        }, 1200);
+        }, 2500);
       }
 
       if (typeof PaystackPop === "undefined") {
