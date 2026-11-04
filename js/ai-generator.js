@@ -56,14 +56,9 @@ export class AIGenerator {
     }
   }
 
-  // Calls Secure Server Proxy for Gemini generation
+  // Calls Secure Server Proxy for Gemini generation (Direct Cloud Run URL avoids 60s Hosting proxy cap)
   async generateBatch({ batchText, courseContext, batchIndex, totalBatches, allowFallback = false }) {
-    const isLocal =
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-    const endpoint = isLocal
-      ? "https://brainsquard-studio-b458b.web.app/api/generateQuestions"
-      : "/api/generateQuestions";
+    const endpoint = "https://generatequestions-x57uk3tqfq-uc.a.run.app";
 
     const response = await fetch(endpoint, {
       method: "POST",

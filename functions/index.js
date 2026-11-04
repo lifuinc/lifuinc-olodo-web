@@ -212,13 +212,22 @@ Output JSON Schema:
       for (const model of modelsToTry) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 28000);
+        const timer = setTimeout(() => controller.abort(), 55000);
+
+        // Disable thinking token overhead on gemini-3.5-flash so 10 questions finish in ~5s
+        const modelBody = {
+          ...requestBody,
+          generationConfig: {
+            ...requestBody.generationConfig,
+            ...(model === "gemini-3.5-flash" ? { thinkingConfig: { thinkingBudget: 0 } } : {})
+          }
+        };
 
         try {
           const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(modelBody),
             signal: controller.signal
           });
           clearTimeout(timer);
@@ -264,9 +273,9 @@ Output JSON Schema:
       let result = null;
       let usedFallback = false;
 
-      // 1. Always try Primary Key (Free) first on its fastest verified model
+      // 1. Always try Primary Key (Free) first on verified 3.5 models
       if (primaryKey) {
-        result = await callGemini(primaryKey, ["gemini-3.5-flash", "gemini-2.5-flash-lite"]);
+        result = await callGemini(primaryKey, ["gemini-3.5-flash", "gemini-3.5-flash-lite"]);
       }
 
       // 2. Only switch to Paid Fallback Key if:
@@ -280,7 +289,7 @@ Output JSON Schema:
 
       if (shouldUseFallback) {
         console.warn(`[Gemini Proxy] Switching to Fallback Key (allowFallback=${allowFallback}, dailyExhausted=${!!result?.isDailyExhausted})...`);
-        result = await callGemini(fallbackKey, ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]);
+        result = await callGemini(fallbackKey, ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"]);
         usedFallback = true;
       }
 
