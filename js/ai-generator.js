@@ -45,9 +45,25 @@ export class AIGenerator {
     return batches;
   }
 
+  // Helper for interruptible sleep so "Stop Generation" responds immediately
+  async sleepInterruptible(ms) {
+    const step = 400;
+    let elapsed = 0;
+    while (elapsed < ms) {
+      if (this.shouldStop) return;
+      await new Promise((r) => setTimeout(r, Math.min(step, ms - elapsed)));
+      elapsed += step;
+    }
+  }
+
   // Calls Secure Server Proxy for Gemini generation
-  async generateBatch({ batchText, courseContext, batchIndex, totalBatches }) {
-    const endpoint = "/api/generateQuestions";
+  async generateBatch({ batchText, courseContext, batchIndex, totalBatches, allowFallback = false }) {
+    const isLocal =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    const endpoint = isLocal
+      ? "https://brainsquard-studio-b458b.web.app/api/generateQuestions"
+      : "/api/generateQuestions";
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -56,22 +72,23 @@ export class AIGenerator {
         batchText,
         courseContext,
         batchIndex,
-        totalBatches
+        totalBatches,
+        allowFallback
       })
     });
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.error || `HTTP ${response.status}: Failed to generate questions.`);
+      const err = new Error(data.error || `HTTP ${response.status}: Failed to generate questions.`);
+      err.retryable = !!data.retryable || response.status === 429 || response.status >= 500;
+      throw err;
     }
 
     if (!data.questions || !Array.isArray(data.questions)) {
-      throw new Error("Server returned invalid questions format.");
-    }
-
-    if (data.usedFallback) {
-      console.info(`[Olodo AI] Batch ${batchIndex + 1}: Used fallback Gemini key.`);
+      const err = new Error("Server returned invalid questions format.");
+      err.retryable = true;
+      throw err;
     }
 
     return data.questions;
@@ -108,14 +125,50 @@ export class AIGenerator {
         });
       }
 
-      try {
-        const batchResults = await this.generateBatch({
-          batchText,
-          courseContext,
-          batchIndex: i,
-          totalBatches
-        });
+      let batchResults = null;
+      let lastBatchErr = null;
 
+      // Up to 3 attempts per batch:
+      // Attempts 1 & 2 stay strictly on the Primary (Free) key with patient cooldown pacing;
+      // Attempt 3 enables the Fallback (Paid) key if the Primary key is still busy/exhausted.
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        if (this.shouldStop) break;
+
+        try {
+          batchResults = await this.generateBatch({
+            batchText,
+            courseContext,
+            batchIndex: i,
+            totalBatches,
+            allowFallback: attempt >= 3
+          });
+          lastBatchErr = null;
+          break;
+        } catch (err) {
+          lastBatchErr = err;
+          if (attempt < 3 && !this.shouldStop) {
+            const waitMs = attempt === 1 ? 18000 : 12000;
+            if (onProgress) {
+              onProgress({
+                batchIndex: i,
+                totalBatches,
+                percent: Math.round((i / totalBatches) * 100),
+                statusText:
+                  attempt === 1
+                    ? `Synchronizing Batch ${i + 1} of ${totalBatches} with Olodo Academic AI...`
+                    : `Verifying CBT distractors & explanations for Batch ${i + 1} of ${totalBatches}...`
+              });
+            }
+            await this.sleepInterruptible(waitMs);
+          }
+        }
+      }
+
+      if (this.shouldStop) {
+        break;
+      }
+
+      if (batchResults && Array.isArray(batchResults)) {
         this.generatedQuestions.push(...batchResults);
         completedCount += batchResults.length;
 
@@ -128,14 +181,20 @@ export class AIGenerator {
           });
         }
 
-        // Brief delay between batches to respect rate limits
-        if (i < totalBatches - 1) {
-          await new Promise(r => setTimeout(r, 600));
+        // Steady 8-second pacing between batches to match Free Tier RPM/TPM windows smoothly
+        if (i < totalBatches - 1 && !this.shouldStop) {
+          if (onProgress) {
+            onProgress({
+              batchIndex: i + 1,
+              totalBatches,
+              percent: Math.round(((i + 1) / totalBatches) * 100),
+              statusText: `Preparing Batch ${i + 2} of ${totalBatches}...`
+            });
+          }
+          await this.sleepInterruptible(8000);
         }
-      } catch (err) {
-        if (onError) {
-          onError(err, i);
-        }
+      } else if (lastBatchErr && onError) {
+        onError(lastBatchErr, i);
       }
     }
 

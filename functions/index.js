@@ -134,7 +134,7 @@ exports.generateQuestions = onRequest(
     cors: true,
     maxInstances: 10,
     region: "us-central1",
-    timeoutSeconds: 120,
+    timeoutSeconds: 300,
     memory: "512MiB",
   },
   async (req, res) => {
@@ -142,7 +142,13 @@ exports.generateQuestions = onRequest(
       return res.status(405).json({ error: "Method Not Allowed. Use POST." });
     }
 
-    const { batchText, courseContext, batchIndex = 0, totalBatches = 1 } = req.body || {};
+    const {
+      batchText,
+      courseContext,
+      batchIndex = 0,
+      totalBatches = 1,
+      allowFallback = false
+    } = req.body || {};
     if (!batchText || typeof batchText !== "string" || !batchText.trim()) {
       return res.status(400).json({ error: "Missing or invalid batchText parameter." });
     }
@@ -199,19 +205,23 @@ Output JSON Schema:
       }
     };
 
-    // Helper to call Gemini REST API
-    async function callGemini(apiKey) {
-      const models = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"];
+    // Helper to call Gemini REST API with per-request timeout protection
+    async function callGemini(apiKey, modelsToTry) {
       let lastErr = null;
 
-      for (const model of models) {
+      for (const model of modelsToTry) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 28000);
+
         try {
           const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
           });
+          clearTimeout(timer);
 
           if (response.ok) {
             const data = await response.json();
@@ -223,18 +233,29 @@ Output JSON Schema:
           const msg = errJson?.error?.message || `HTTP ${status}`;
           lastErr = { status, msg };
 
-          // If rate limit / quota exceeded (429), return immediately to trigger fallback key
+          // Check if Daily quota is completely exhausted vs temporary per-minute rate limit
           if (status === 429) {
-            return { success: false, isQuotaExceeded: true, error: msg };
+            const isDailyExhausted = /per\s*day|daily|GenerateRequestsPerDay/i.test(msg);
+            return {
+              success: false,
+              isQuotaExceeded: true,
+              isDailyExhausted,
+              error: msg
+            };
           }
         } catch (fetchErr) {
-          lastErr = { status: 0, msg: fetchErr.message };
+          clearTimeout(timer);
+          lastErr = {
+            status: 503,
+            msg: fetchErr.name === "AbortError" ? "Model request timed out" : fetchErr.message
+          };
         }
       }
 
       return {
         success: false,
         isQuotaExceeded: false,
+        isDailyExhausted: false,
         error: lastErr?.msg || "Unknown Gemini API error"
       };
     }
@@ -243,25 +264,37 @@ Output JSON Schema:
       let result = null;
       let usedFallback = false;
 
-      // 1. Try Primary Key (Free)
+      // 1. Always try Primary Key (Free) first on its fastest verified model
       if (primaryKey) {
-        result = await callGemini(primaryKey);
+        result = await callGemini(primaryKey, ["gemini-3.5-flash", "gemini-2.5-flash-lite"]);
       }
 
-      // 2. If Primary failed due to quota limit (429) or failed and Fallback Key exists, try Fallback
-      if ((!result || !result.success) && fallbackKey) {
-        console.warn(`[Gemini Proxy] Primary key failed or quota exhausted. Switching to Fallback Key...`);
-        result = await callGemini(fallbackKey);
+      // 2. Only switch to Paid Fallback Key if:
+      //    - Primary Key's Daily Quota is exhausted, OR
+      //    - The client has already completed its patient Free-Tier cooldown retries (allowFallback === true), OR
+      //    - No primaryKey is configured
+      const shouldUseFallback =
+        (!result || !result.success) &&
+        fallbackKey &&
+        (!primaryKey || result?.isDailyExhausted || allowFallback === true);
+
+      if (shouldUseFallback) {
+        console.warn(`[Gemini Proxy] Switching to Fallback Key (allowFallback=${allowFallback}, dailyExhausted=${!!result?.isDailyExhausted})...`);
+        result = await callGemini(fallbackKey, ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]);
         usedFallback = true;
       }
 
       if (!result || !result.success) {
-        return res.status(502).json({
-          error: `Gemini generation failed: ${result?.error || "All available keys failed"}`
+        // Tell the client this batch can be retried after a brief pacing pause on the Primary Key
+        return res.status(429).json({
+          retryable: true,
+          error: result?.error || "AI service busy, retrying batch..."
         });
       }
 
-      const candidate = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parts = result.data?.candidates?.[0]?.content?.parts || [];
+      const jsonPart = [...parts].reverse().find((p) => p.text && !p.thought) || parts[0];
+      const candidate = jsonPart?.text;
       if (!candidate) {
         return res.status(502).json({ error: "Gemini returned empty candidate text." });
       }
@@ -270,8 +303,14 @@ Output JSON Schema:
       try {
         parsedQuestions = JSON.parse(candidate);
       } catch (e) {
-        const cleaned = candidate.replace(/```json/g, "").replace(/```/g, "").trim();
-        parsedQuestions = JSON.parse(cleaned);
+        const cleaned = candidate.replace(/```json/gi, "").replace(/```/g, "").trim();
+        const startIdx = cleaned.indexOf("[");
+        const endIdx = cleaned.lastIndexOf("]");
+        if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+          parsedQuestions = JSON.parse(cleaned.slice(startIdx, endIdx + 1));
+        } else {
+          parsedQuestions = JSON.parse(cleaned);
+        }
       }
 
       if (!Array.isArray(parsedQuestions)) {
