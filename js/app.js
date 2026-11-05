@@ -1241,6 +1241,9 @@ function initParser() {
     const isSuperAdmin = currentUser && currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
     const existing = currentCourses.find((c) => c.docId === docId);
 
+    const publishMode = document.querySelector('input[name="cloud-publish-mode"]:checked')?.value || "append";
+    let finalQuestions = result.questions;
+
     if (existing) {
       const isOriginalAuthor = (existing.authorId && existing.authorId === currentUser.uid) ||
                                (existing.authorEmail && existing.authorEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
@@ -1257,17 +1260,52 @@ function initParser() {
         return;
       }
 
-      // Original author confirming version update:
-      const confirmUpdate = confirm(
-        `ℹ️ Existing Question Bank Found:\n\n` +
-        `You previously published "${code} - ${title}" (currently at Version ${existing.version || 1} with ${existing.totalQuestions || 0} questions).\n\n` +
-        `Publishing now will update it to Version ${(existing.version || 1) + 1} with your new batch of ${result.total} questions.\n\n` +
-        `Do you want to proceed with this update?`
-      );
-      if (!confirmUpdate) return;
+      const existingCloudQuestions = Array.isArray(existing.questions) ? existing.questions : [];
+
+      if (publishMode === "append" && existingCloudQuestions.length > 0) {
+        // Merge existing cloud questions + newly parsed questions (deduplicating by question text)
+        const mergedMap = new Map();
+        for (const oldQ of existingCloudQuestions) {
+          const key = (oldQ.text || oldQ.question || "").trim().toLowerCase();
+          if (key) mergedMap.set(key, { ...oldQ });
+        }
+        let newlyAddedCount = 0;
+        for (const newQ of result.questions) {
+          const key = (newQ.text || newQ.question || "").trim().toLowerCase();
+          if (!key) continue;
+          if (!mergedMap.has(key)) {
+            newlyAddedCount++;
+          }
+          mergedMap.set(key, { ...newQ });
+        }
+        finalQuestions = Array.from(mergedMap.values()).map((q, idx) => ({
+          ...q,
+          id: String(idx + 1)
+        }));
+
+        const confirmAppend = confirm(
+          `➕ APPEND & MERGE WITH CLOUD QUESTION BANK:\n\n` +
+          `• Existing in Cloud (v${existing.version || 1}): ${existingCloudQuestions.length} questions\n` +
+          `• Current Batch in Editor: ${result.total} questions (${newlyAddedCount} brand-new unique questions)\n` +
+          `• New Combined Total (v${(existing.version || 1) + 1}): ${finalQuestions.length} questions\n\n` +
+          `Do you want to publish Version ${(existing.version || 1) + 1} with all ${finalQuestions.length} combined questions?`
+        );
+        if (!confirmAppend) return;
+      } else {
+        // Replace mode (or existing course had 0 questions)
+        const confirmUpdate = confirm(
+          `🔄 REPLACE EXISTING QUESTION BANK:\n\n` +
+          `You previously published "${code} - ${title}" (currently at Version ${existing.version || 1} with ${existing.totalQuestions || 0} questions).\n\n` +
+          `Publishing in Replace Mode will overwrite it as Version ${(existing.version || 1) + 1} with the ${finalQuestions.length} questions currently in your editor.\n\n` +
+          `Do you want to proceed?`
+        );
+        if (!confirmUpdate) return;
+      }
     }
 
     const nextVersion = existing ? (existing.version || 1) + 1 : 1;
+    const withExplCount = finalQuestions.filter((q) => q.explanation && String(q.explanation).trim().length > 0).length;
+    const finalHasExplanations = finalQuestions.length > 0 && (withExplCount / finalQuestions.length) >= 0.7;
 
     // Check verification status
     const isVerified = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified");
@@ -1286,12 +1324,12 @@ function initParser() {
       semester: period, // For backwards compatibility with mobile app
       period,
       singleCoursePrice: price,
-      totalQuestions: result.total,
+      totalQuestions: finalQuestions.length,
       published: isVerified, // Only published live to mobile if verified!
       vettingStatus: isVerified ? "verified" : "pending",
       isFreeTrial: true,
       version: nextVersion,
-      hasExplanations: result.hasExplanations || false,
+      hasExplanations: finalHasExplanations,
       academicSession: session,
       authorId: existing && existing.authorId ? existing.authorId : currentUser.uid,
       authorEmail: existing && existing.authorEmail ? existing.authorEmail : currentUser.email,
@@ -1309,7 +1347,7 @@ function initParser() {
         authorPercent: 20,
         olodoPercent: 30
       },
-      questions: result.questions,
+      questions: finalQuestions,
       lastUpdated: serverTimestamp()
     };
 
@@ -1321,11 +1359,11 @@ function initParser() {
 
       if (isVerified) {
         alert(
-          `✓ Success! "${code} - ${title}" (v${nextVersion}, ${result.total} Qs) is now live on the Olodo Mobile App for students in ${institution} · ${level} · ${period}!`
+          `✓ Success! "${code} - ${title}" (v${nextVersion}, ${finalQuestions.length} total Qs) is now live on the Olodo Mobile App for students in ${institution} · ${level} · ${period}!`
         );
       } else {
         alert(
-          `✓ Received! "${code} - ${title}" (v${nextVersion}, ${result.total} Qs) has been submitted for review.\n\nYour question bank is safely stored and will be pushed live to student mobile devices once approved by the Olodo Academic Vetting Board.`
+          `✓ Received! "${code} - ${title}" (v${nextVersion}, ${finalQuestions.length} total Qs) has been submitted for review.\n\nYour question bank is safely stored and will be pushed live to student mobile devices once approved by the Olodo Academic Vetting Board.`
         );
       }
 
@@ -1355,7 +1393,9 @@ function initAIGenerator() {
   const rawInput = $("#ai-raw-input");
   const batchSelect = $("#ai-batch-size");
   const startBtn = $("#btn-start-ai-generation");
+  const resumeBtn = $("#btn-resume-ai-generation");
   const stopBtn = $("#btn-stop-ai-generation");
+  const loadCloudToDeckBtn = $("#btn-load-cloud-to-deck");
 
   const pdfUploadInput = $("#ai-pdf-upload");
   const pdfStatusEl = $("#ai-pdf-status");
@@ -1372,10 +1412,21 @@ function initAIGenerator() {
   const deckCount = $("#ai-deck-count");
   const cardsList = $("#ai-question-cards-list");
   const addQuestionBtn = $("#btn-ai-add-question");
+  const clearDeckBtn = $("#btn-ai-clear-deck");
   const applyBtn = $("#btn-ai-apply-to-portal");
 
   const textArea = $("#raw-question-text");
   const parseResultBox = $("#parse-results");
+
+  function syncResumeButtonUI() {
+    if (!resumeBtn) return;
+    if (ai.hasUnfinishedBatches && ai.nextBatchIndex < ai.totalBatches && !ai.isGenerating) {
+      resumeBtn.style.display = "inline-flex";
+      resumeBtn.textContent = `▶️ Resume Generation (Batch ${ai.nextBatchIndex + 1} of ${ai.totalBatches})`;
+    } else {
+      resumeBtn.style.display = "none";
+    }
+  }
 
   // Switch tabs
   tabAi?.addEventListener("click", () => {
@@ -1420,6 +1471,13 @@ function initAIGenerator() {
       const previewBatches = ai.chunkText(extracted.fullText, parseInt(batchSelect?.value || "10", 10), selectedMode);
       const extractBatchesCount = previewBatches.filter((b) => b.batchType === "extract").length;
       const summaryBatchesCount = previewBatches.filter((b) => b.batchType === "summary").length;
+
+      // Reset batch pointer for newly loaded PDF while preserving any existing questions in the Review Deck
+      ai.nextBatchIndex = 0;
+      ai.totalBatches = previewBatches.length;
+      ai.hasUnfinishedBatches = false;
+      ai.saveCheckpoint({ rawText: extracted.fullText });
+      syncResumeButtonUI();
 
       if (pdfStatusEl) {
         pdfStatusEl.style.color = "var(--success)";
@@ -1485,7 +1543,7 @@ function initAIGenerator() {
     const list = ai.generatedQuestions;
     const diagramsCount = list.filter((q) => q.diagramSvg && q.diagramSvg.trim().length > 0).length;
     if (deckCount) {
-      deckCount.textContent = `${list.length} questions generated${diagramsCount > 0 ? ` (${diagramsCount} with vector diagrams)` : ""}. Review distractors, verbatim text, and diagrams before publishing.`;
+      deckCount.textContent = `${list.length} questions in deck${diagramsCount > 0 ? ` (${diagramsCount} with vector diagrams)` : ""}. Auto-saved locally — review before publishing.`;
     }
     cardsList.innerHTML = list.map((q, idx) => {
       const hasDiagram = q.diagramSvg && q.diagramSvg.trim().length > 0;
@@ -1537,6 +1595,7 @@ function initAIGenerator() {
       el.addEventListener('input', (e) => {
         const idx = parseInt(e.target.dataset.idx, 10);
         ai.generatedQuestions[idx].question = e.target.value;
+        ai.saveCheckpoint();
       });
     });
 
@@ -1550,6 +1609,7 @@ function initAIGenerator() {
         if (ai.generatedQuestions[idx].answer === oldVal) {
           ai.generatedQuestions[idx].answer = newVal;
         }
+        ai.saveCheckpoint();
       });
     });
 
@@ -1558,6 +1618,7 @@ function initAIGenerator() {
         const idx = parseInt(e.target.dataset.idx, 10);
         const optIdx = parseInt(e.target.dataset.opt, 10);
         ai.generatedQuestions[idx].answer = ai.generatedQuestions[idx].options[optIdx];
+        ai.saveCheckpoint();
         renderQuestionCards();
       });
     });
@@ -1566,6 +1627,7 @@ function initAIGenerator() {
       el.addEventListener('input', (e) => {
         const idx = parseInt(e.target.dataset.idx, 10);
         ai.generatedQuestions[idx].explanation = e.target.value;
+        ai.saveCheckpoint();
       });
     });
 
@@ -1573,6 +1635,7 @@ function initAIGenerator() {
       el.addEventListener('click', (e) => {
         const idx = parseInt(e.target.dataset.idx, 10);
         ai.generatedQuestions[idx].diagramSvg = null;
+        ai.saveCheckpoint();
         renderQuestionCards();
       });
     });
@@ -1581,6 +1644,7 @@ function initAIGenerator() {
       el.addEventListener('click', (e) => {
         const idx = parseInt(e.target.dataset.idx, 10);
         ai.generatedQuestions.splice(idx, 1);
+        ai.saveCheckpoint();
         renderQuestionCards();
       });
     });
@@ -1591,8 +1655,24 @@ function initAIGenerator() {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Start Generation
-  startBtn?.addEventListener("click", async () => {
+  // Restore saved checkpoint from localStorage on startup
+  const restored = ai.loadCheckpoint();
+  if (restored) {
+    if (restored.rawText && rawInput && !rawInput.value.trim()) {
+      rawInput.value = restored.rawText;
+    }
+    if (restored.courseContext && contextInput && !contextInput.value.trim()) {
+      contextInput.value = restored.courseContext;
+    }
+    if (ai.generatedQuestions.length > 0 && reviewDeck) {
+      reviewDeck.style.display = "block";
+      renderQuestionCards();
+    }
+    syncResumeButtonUI();
+  }
+
+  // Unified runner for both Start/Append and Resume
+  async function executeGeneration({ isResume = false } = {}) {
     // 0. Pre-Flight Duplicate Check: Prevent Wasting Gemini AI Credits on Blocked Duplicate Courses
     const availability = getCourseAvailability();
     if (availability.status === "duplicate" && !availability.isAllowed) {
@@ -1615,18 +1695,21 @@ function initAIGenerator() {
 
     startBtn.disabled = true;
     startBtn.style.display = "none";
+    if (resumeBtn) resumeBtn.style.display = "none";
     stopBtn.style.display = "inline-flex";
     stopBtn.textContent = "⏹️ Stop Generation";
     stopBtn.disabled = false;
     progressBox.style.display = "block";
-    progressLog.innerHTML = "";
-    progressBar.style.width = "0%";
-    reviewDeck.style.display = "none";
+    if (!isResume) {
+      progressLog.innerHTML = "";
+      progressBar.style.width = "0%";
+    }
 
     const batchSize = parseInt(batchSelect.value, 10) || 10;
     const courseContext = contextInput.value.trim();
     const pdfMode = document.querySelector('input[name="ai-pdf-mode"]:checked')?.value || "option1";
     const includeDiagrams = includeDiagramsCheckbox ? includeDiagramsCheckbox.checked : true;
+    const startFromBatch = isResume ? ai.nextBatchIndex : 0;
 
     try {
       const results = await ai.runPipeline({
@@ -1635,6 +1718,8 @@ function initAIGenerator() {
         batchSize,
         pdfMode,
         includeDiagrams,
+        startFromBatch,
+        appendToExisting: true,
         onProgress: ({ batchIndex, totalBatches, percent, statusText }) => {
           progressStatus.textContent = statusText;
           progressPercent.textContent = `${percent}%`;
@@ -1642,18 +1727,20 @@ function initAIGenerator() {
         },
         onBatchSuccess: ({ batchIndex, totalBatches, batchResults, totalGenerated }) => {
           const diagCount = batchResults.filter((q) => q.diagramSvg).length;
-          progressLog.innerHTML += `<div style="color: var(--success); margin-bottom: 2px;">✓ Batch ${batchIndex + 1}/${totalBatches}: Generated ${batchResults.length} CBT questions${diagCount > 0 ? ` (${diagCount} with diagram)` : ""} (${totalGenerated} total)</div>`;
+          progressLog.innerHTML += `<div style="color: var(--success); margin-bottom: 2px;">✓ Batch ${batchIndex + 1}/${totalBatches}: Added ${batchResults.length} CBT questions${diagCount > 0 ? ` (${diagCount} with diagram)` : ""} (${totalGenerated} total in deck)</div>`;
+          // Live update the Review Deck after every batch so progress is immediately visible and usable!
+          reviewDeck.style.display = "block";
+          renderQuestionCards();
         },
         onError: (err, batchIndex) => {
-          progressLog.innerHTML += `<div style="color: var(--danger); margin-bottom: 2px;">❌ Batch ${batchIndex + 1} Error: ${err.message}</div>`;
+          progressLog.innerHTML += `<div style="color: var(--danger); margin-bottom: 2px;">⚠️ Batch ${batchIndex + 1} Paused: ${err.message} — Click "▶️ Resume Generation" to continue from Batch ${batchIndex + 1}.</div>`;
         }
       });
 
       if (results.length > 0) {
         reviewDeck.style.display = "block";
         renderQuestionCards();
-        reviewDeck.scrollIntoView({ behavior: "smooth" });
-      } else {
+      } else if (!ai.hasUnfinishedBatches) {
         alert("No questions were generated. Please check your input text or PDF.");
       }
     } catch (e) {
@@ -1662,14 +1749,69 @@ function initAIGenerator() {
       startBtn.disabled = false;
       startBtn.style.display = "inline-flex";
       stopBtn.style.display = "none";
+      syncResumeButtonUI();
     }
-  });
+  }
+
+  // Start / Append Generation
+  startBtn?.addEventListener("click", () => executeGeneration({ isResume: false }));
+
+  // Resume Generation from last unfinished batch
+  resumeBtn?.addEventListener("click", () => executeGeneration({ isResume: true }));
 
   // Stop Generation
   stopBtn?.addEventListener("click", () => {
     ai.stop();
     stopBtn.textContent = "Stopping...";
     stopBtn.disabled = true;
+  });
+
+  // Load Existing Cloud Course Questions into Review Deck
+  loadCloudToDeckBtn?.addEventListener("click", () => {
+    const availability = getCourseAvailability();
+    const existing = currentCourses.find((c) => c.docId === availability.docId);
+    if (!existing || !Array.isArray(existing.questions) || existing.questions.length === 0) {
+      alert(
+        `ℹ️ No existing cloud questions found for "${availability.code}" (${availability.institution} · ${availability.level} · ${availability.period}).\n\n` +
+        `Make sure you have selected the matching Institution, Level, Semester, and Course Code in Step 1.`
+      );
+      return;
+    }
+
+    if (availability.status === "duplicate" && !availability.isAllowed) {
+      alert(`⛔ You can only load cloud questions for courses you authored or coordinate.`);
+      return;
+    }
+
+    const mapped = existing.questions.map((q) => ({
+      id: q.id,
+      question: q.text || q.question || "",
+      options: q.options || [],
+      answer: q.correctAnswer || q.answer || "",
+      explanation: q.explanation || "",
+      diagramSvg: q.diagramSvg || null
+    }));
+
+    const addedCount = ai.appendQuestionsUnique(mapped);
+    ai.saveCheckpoint();
+    reviewDeck.style.display = "block";
+    renderQuestionCards();
+    reviewDeck.scrollIntoView({ behavior: "smooth" });
+    alert(`✓ Loaded ${addedCount} new questions from Cloud ("${existing.code}" v${existing.version || 1}) into your Review Deck! Total in deck: ${ai.generatedQuestions.length} questions.`);
+  });
+
+  // Clear Review Deck
+  clearDeckBtn?.addEventListener("click", () => {
+    if (ai.generatedQuestions.length === 0 && !ai.hasUnfinishedBatches) return;
+    const ok = confirm(
+      `🗑️ Clear Review Deck?\n\nThis will remove the ${ai.generatedQuestions.length} questions currently in your local Review Deck (your already-published Cloud questions in Firestore will NOT be affected).`
+    );
+    if (!ok) return;
+    ai.clearCheckpoint();
+    syncResumeButtonUI();
+    renderQuestionCards();
+    reviewDeck.style.display = "none";
+    progressBox.style.display = "none";
   });
 
   // Add Custom Question manually in deck
@@ -1682,6 +1824,7 @@ function initAIGenerator() {
       explanation: "Explanation confirming the answer.",
       diagramSvg: null
     });
+    ai.saveCheckpoint();
     renderQuestionCards();
   });
 
@@ -1692,15 +1835,46 @@ function initAIGenerator() {
       return;
     }
 
-    // Convert reviewed questions into standard JSON array format
-    const formatted = ai.generatedQuestions.map((q, idx) => ({
+    // If the manual editor already has valid JSON questions, merge them with the Review Deck (deduplicated)
+    const combinedMap = new Map();
+    const existingRaw = textArea.value.trim();
+    if (existingRaw.startsWith("[") && existingRaw.endsWith("]")) {
+      try {
+        const existingArr = JSON.parse(existingRaw);
+        if (Array.isArray(existingArr)) {
+          for (const eq of existingArr) {
+            const key = (eq.text || eq.question || "").trim().toLowerCase();
+            if (key) {
+              combinedMap.set(key, {
+                text: eq.text || eq.question || "",
+                options: eq.options || [],
+                correctAnswer: eq.correctAnswer || eq.answer || "",
+                group: eq.group || "General",
+                explanation: eq.explanation || "",
+                diagramSvg: eq.diagramSvg || null
+              });
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    for (const q of ai.generatedQuestions) {
+      const key = (q.question || q.text || "").trim().toLowerCase();
+      if (!key) continue;
+      combinedMap.set(key, {
+        text: q.question || q.text || "",
+        options: q.options || [],
+        correctAnswer: q.answer || q.correctAnswer || "",
+        group: "General",
+        explanation: q.explanation || "",
+        diagramSvg: q.diagramSvg || null
+      });
+    }
+
+    const formatted = Array.from(combinedMap.values()).map((q, idx) => ({
       id: String(idx + 1),
-      text: q.question,
-      options: q.options,
-      correctAnswer: q.answer,
-      group: "General",
-      explanation: q.explanation,
-      diagramSvg: q.diagramSvg || null
+      ...q
     }));
 
     textArea.value = JSON.stringify(formatted, null, 2);

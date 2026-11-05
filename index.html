@@ -666,7 +666,7 @@
 "Coser (1956)"' style="font-family: monospace; font-size: 13px; line-height: 1.4;"></textarea>
           </div>
 
-          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
               <label style="margin: 0; font-weight: 600;">Batch Size:</label>
               <select id="ai-batch-size" style="width: auto; padding: 6px 10px; font-size: 13px;">
@@ -677,10 +677,16 @@
             </div>
 
             <button type="button" class="btn btn-primary" id="btn-start-ai-generation" style="padding: 10px 18px; font-weight: 700;">
-              ⚡ Start AI Batch Generation
+              ⚡ Start / Append AI Batch Generation
+            </button>
+            <button type="button" class="btn btn-success" id="btn-resume-ai-generation" style="display: none; padding: 10px 18px; font-weight: 700; background: var(--success); color: #fff;">
+              ▶️ Resume Generation
             </button>
             <button type="button" class="btn btn-outline" id="btn-stop-ai-generation" style="display: none; color: var(--danger); border-color: var(--danger);">
               ⏹️ Stop Generation
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-load-cloud-to-deck" title="Load already-published cloud questions for this course into the Review Deck">
+              📥 Load Existing Cloud Course Questions
             </button>
           </div>
 
@@ -700,11 +706,12 @@
           <div id="ai-review-deck" style="display: none; margin-top: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px solid var(--border);">
               <div>
-                <div style="font-weight: 800; font-size: 16px; color: var(--primary);">Interactive Question Review Deck</div>
+                <div style="font-weight: 800; font-size: 16px; color: var(--primary);">Interactive Question Review Deck (Auto-Saved)</div>
                 <div style="font-size: 12.5px; color: var(--muted);" id="ai-deck-count">0 questions generated. Review distractors and verbatim text before publishing.</div>
               </div>
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-outline btn-sm" id="btn-ai-add-question">➕ Add Custom Question</button>
+                <button type="button" class="btn btn-outline btn-sm" id="btn-ai-clear-deck" style="color: var(--danger); border-color: var(--danger);">🗑️ Clear Deck</button>
                 <button type="button" class="btn btn-success btn-sm" id="btn-ai-apply-to-portal" style="font-weight: 700; background: var(--success); color: #fff;">
                   ✅ Apply to Question Bank & Prepare for Vetting
                 </button>
@@ -728,9 +735,23 @@
           <textarea id="raw-question-text" rows="8" placeholder="Paste questions here... e.g.&#10;P|______ views entrepreneurship as “self-employment of any sort”.|Cantillon (circa 1730)|Cantillon wrote this in circa 1730.&#10;P|In 1934, ______ equated entrepreneurship with innovation.|Joseph Schumpeter|Schumpeter introduced the concept of creative destruction."></textarea>
         </div>
 
-        <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--border);">
-          <button class="btn btn-outline" id="btn-parse-dryrun">🔍 Check & Test Parse</button>
-          <button class="btn btn-primary" id="btn-publish-firebase" style="font-weight: 700; padding: 10px 20px;">🚀 Publish / Submit for Vetting</button>
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: var(--bg); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);">
+            <span style="font-size: 12.5px; font-weight: 700; color: var(--text);">When Updating an Existing Course in Cloud:</span>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--primary); margin: 0; cursor: pointer;">
+              <input type="radio" name="cloud-publish-mode" value="append" checked style="width: auto;">
+              <span>➕ Append &amp; Merge New Questions with Existing Cloud Questions (Recommended)</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; color: var(--muted); margin: 0; cursor: pointer;">
+              <input type="radio" name="cloud-publish-mode" value="replace" style="width: auto;">
+              <span>🔄 Replace Entire Cloud Bank</span>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn btn-outline" id="btn-parse-dryrun">🔍 Check & Test Parse</button>
+            <button class="btn btn-primary" id="btn-publish-firebase" style="font-weight: 700; padding: 10px 20px;">🚀 Publish / Submit for Vetting</button>
+          </div>
         </div>
 
         <!-- Parse Preview Result -->

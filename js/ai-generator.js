@@ -7,11 +7,93 @@ export class AIGenerator {
     this.shouldStop = false;
     this.generatedQuestions = [];
     this.pdfPageImages = [];
+    this.nextBatchIndex = 0;
+    this.totalBatches = 0;
+    this.hasUnfinishedBatches = false;
+    this.checkpointKey = "olodo_ai_checkpoint_v1";
   }
 
   stop() {
     this.shouldStop = true;
     this.isGenerating = false;
+  }
+
+  // Append questions to deck while avoiding exact duplicates by question text
+  appendQuestionsUnique(newQuestions = []) {
+    const existingSet = new Set(
+      this.generatedQuestions.map((q) => (q.question || q.text || "").trim().toLowerCase())
+    );
+    let added = 0;
+    for (const q of newQuestions) {
+      const qText = (q.question || q.text || "").trim();
+      if (!qText) continue;
+      const key = qText.toLowerCase();
+      if (!existingSet.has(key)) {
+        existingSet.add(key);
+        this.generatedQuestions.push({
+          id: q.id || `ai_${Date.now()}_${this.generatedQuestions.length + 1}`,
+          question: qText,
+          options: Array.isArray(q.options) ? q.options : [],
+          answer: q.answer || q.correctAnswer || "",
+          explanation: q.explanation || "",
+          diagramSvg: q.diagramSvg || null
+        });
+        added++;
+      }
+    }
+    return added;
+  }
+
+  // Persist current deck + batch progress to localStorage so refreshes/power loss never lose work
+  saveCheckpoint(meta = {}) {
+    try {
+      const payload = {
+        savedAt: Date.now(),
+        generatedQuestions: this.generatedQuestions,
+        nextBatchIndex: this.nextBatchIndex,
+        totalBatches: this.totalBatches,
+        hasUnfinishedBatches: this.hasUnfinishedBatches,
+        rawText: meta.rawText ?? this.lastRawText ?? "",
+        courseContext: meta.courseContext ?? this.lastCourseContext ?? "",
+        batchSize: meta.batchSize ?? this.lastBatchSize ?? 10,
+        pdfMode: meta.pdfMode ?? this.lastPdfMode ?? "option1",
+        includeDiagrams: meta.includeDiagrams ?? this.lastIncludeDiagrams ?? true
+      };
+      localStorage.setItem(this.checkpointKey, JSON.stringify(payload));
+    } catch (_) {
+      // Ignore storage quota errors
+    }
+  }
+
+  loadCheckpoint() {
+    try {
+      const raw = localStorage.getItem(this.checkpointKey);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !Array.isArray(data.generatedQuestions)) return null;
+      this.generatedQuestions = data.generatedQuestions;
+      this.nextBatchIndex = Number(data.nextBatchIndex) || 0;
+      this.totalBatches = Number(data.totalBatches) || 0;
+      this.hasUnfinishedBatches = !!data.hasUnfinishedBatches;
+      this.lastRawText = data.rawText || "";
+      this.lastCourseContext = data.courseContext || "";
+      this.lastBatchSize = data.batchSize || 10;
+      this.lastPdfMode = data.pdfMode || "option1";
+      this.lastIncludeDiagrams = data.includeDiagrams !== false;
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  clearCheckpoint() {
+    this.generatedQuestions = [];
+    this.nextBatchIndex = 0;
+    this.totalBatches = 0;
+    this.hasUnfinishedBatches = false;
+    try {
+      localStorage.removeItem(this.checkpointKey);
+    } catch (_) {}
   }
 
   // Strip common third-party summary watermarks, phone banners, and page footers
@@ -348,33 +430,53 @@ export class AIGenerator {
     return data.questions;
   }
 
-  // Executes the full batch pipeline with progress callbacks
+  // Executes the full batch pipeline with progress callbacks, auto-checkpointing & resume support
   async runPipeline({
     rawText,
     courseContext,
     batchSize = 10,
     pdfMode = "option1",
     includeDiagrams = true,
+    startFromBatch = 0,
+    appendToExisting = true,
     onProgress,
     onBatchSuccess,
     onError
   }) {
     this.isGenerating = true;
     this.shouldStop = false;
-    this.generatedQuestions = [];
+
+    if (!appendToExisting && startFromBatch === 0) {
+      this.generatedQuestions = [];
+    }
+
+    this.lastRawText = rawText;
+    this.lastCourseContext = courseContext;
+    this.lastBatchSize = batchSize;
+    this.lastPdfMode = pdfMode;
+    this.lastIncludeDiagrams = includeDiagrams;
 
     const batches = this.chunkText(rawText, batchSize, pdfMode);
     if (batches.length === 0) {
-      if (onError) onError(new Error("No question entries found in the input. Please upload a PDF or paste your text."));
+      if (onError) onError(new Error("No question entries found in the input. Please upload a PDF or paste your text."), 0);
       this.isGenerating = false;
-      return [];
+      return this.generatedQuestions;
     }
 
     const totalBatches = batches.length;
-    let completedCount = 0;
+    const safeStart = Math.max(0, Math.min(startFromBatch, totalBatches - 1));
+    this.totalBatches = totalBatches;
+    this.nextBatchIndex = safeStart;
+    this.hasUnfinishedBatches = true;
 
-    for (let i = 0; i < totalBatches; i++) {
+    let pausedBeforeFinish = false;
+
+    for (let i = safeStart; i < totalBatches; i++) {
       if (this.shouldStop) {
+        this.nextBatchIndex = i;
+        this.hasUnfinishedBatches = true;
+        pausedBeforeFinish = true;
+        this.saveCheckpoint();
         break;
       }
 
@@ -437,12 +539,18 @@ export class AIGenerator {
       }
 
       if (this.shouldStop) {
+        this.nextBatchIndex = i;
+        this.hasUnfinishedBatches = true;
+        pausedBeforeFinish = true;
+        this.saveCheckpoint();
         break;
       }
 
       if (batchResults && Array.isArray(batchResults)) {
-        this.generatedQuestions.push(...batchResults);
-        completedCount += batchResults.length;
+        this.appendQuestionsUnique(batchResults);
+        this.nextBatchIndex = i + 1;
+        this.hasUnfinishedBatches = i + 1 < totalBatches;
+        this.saveCheckpoint();
 
         if (onBatchSuccess) {
           onBatchSuccess({
@@ -465,18 +573,40 @@ export class AIGenerator {
           }
           await this.sleepInterruptible(8000);
         }
-      } else if (lastBatchErr && onError) {
-        onError(lastBatchErr, i);
+      } else {
+        // Network failure or quota exhausted on Batch i:
+        // Stop right here and save checkpoint so the educator can Resume directly from Batch i + 1!
+        this.nextBatchIndex = i;
+        this.hasUnfinishedBatches = true;
+        pausedBeforeFinish = true;
+        this.saveCheckpoint();
+        if (lastBatchErr && onError) {
+          onError(lastBatchErr, i);
+        }
+        break;
       }
     }
 
     this.isGenerating = false;
-    if (onProgress) {
+    if (!pausedBeforeFinish) {
+      this.hasUnfinishedBatches = false;
+      this.nextBatchIndex = 0;
+      this.saveCheckpoint();
+      if (onProgress) {
+        onProgress({
+          batchIndex: totalBatches,
+          totalBatches,
+          percent: 100,
+          statusText: `Completed! ${this.generatedQuestions.length} CBT questions ready in Review Deck.`
+        });
+      }
+    } else if (onProgress) {
+      const donePct = Math.round((this.nextBatchIndex / totalBatches) * 100);
       onProgress({
-        batchIndex: totalBatches,
+        batchIndex: this.nextBatchIndex,
         totalBatches,
-        percent: 100,
-        statusText: `Completed! Generated ${this.generatedQuestions.length} CBT questions.`
+        percent: donePct,
+        statusText: `Paused at Batch ${this.nextBatchIndex + 1} of ${totalBatches} (${this.generatedQuestions.length} questions saved). Click "Resume Generation" when ready.`
       });
     }
 
