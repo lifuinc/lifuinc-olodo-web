@@ -1357,6 +1357,11 @@ function initAIGenerator() {
   const startBtn = $("#btn-start-ai-generation");
   const stopBtn = $("#btn-stop-ai-generation");
 
+  const pdfUploadInput = $("#ai-pdf-upload");
+  const pdfStatusEl = $("#ai-pdf-status");
+  const clearPdfBtn = $("#btn-clear-ai-pdf");
+  const includeDiagramsCheckbox = $("#ai-include-diagrams");
+
   const progressBox = $("#ai-progress-box");
   const progressStatus = $("#ai-progress-status");
   const progressPercent = $("#ai-progress-percent");
@@ -1385,6 +1390,60 @@ function initAIGenerator() {
     panelManual.style.display = "block";
     tabAi.className = "btn btn-outline btn-sm";
     tabManual.className = "btn btn-primary btn-sm";
+  });
+
+  // Handle PDF Upload & Extraction
+  pdfUploadInput?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (pdfStatusEl) {
+      pdfStatusEl.style.color = "var(--primary)";
+      pdfStatusEl.style.fontWeight = "700";
+      pdfStatusEl.textContent = `⏳ Reading "${file.name}"...`;
+    }
+
+    try {
+      const extracted = await ai.extractFromPdf(file, (statusMsg) => {
+        if (pdfStatusEl) pdfStatusEl.textContent = `⏳ ${statusMsg}`;
+      });
+
+      rawInput.value = extracted.fullText;
+
+      // Auto-populate Course Context if empty and filename has a course code
+      const codeMatch = file.name.match(/([A-Za-z]{3}\s*\d{3})/);
+      if (codeMatch && contextInput && !contextInput.value.trim()) {
+        contextInput.value = codeMatch[1].toUpperCase();
+      }
+
+      const selectedMode = document.querySelector('input[name="ai-pdf-mode"]:checked')?.value || "option1";
+      const previewBatches = ai.chunkText(extracted.fullText, parseInt(batchSelect?.value || "10", 10), selectedMode);
+      const extractBatchesCount = previewBatches.filter((b) => b.batchType === "extract").length;
+      const summaryBatchesCount = previewBatches.filter((b) => b.batchType === "summary").length;
+
+      if (pdfStatusEl) {
+        pdfStatusEl.style.color = "var(--success)";
+        pdfStatusEl.innerHTML = `✓ Loaded <b>${escapeHtml(file.name)}</b> (${extracted.numPages} pages · ${extractBatchesCount} Past Question batches${summaryBatchesCount > 0 ? ` + ${summaryBatchesCount} Summary Note batches` : ""})`;
+      }
+      if (clearPdfBtn) clearPdfBtn.style.display = "inline-flex";
+    } catch (err) {
+      if (pdfStatusEl) {
+        pdfStatusEl.style.color = "var(--danger)";
+        pdfStatusEl.textContent = `❌ Failed to read PDF: ${err.message}`;
+      }
+    }
+  });
+
+  clearPdfBtn?.addEventListener("click", () => {
+    if (pdfUploadInput) pdfUploadInput.value = "";
+    ai.pdfPageImages = [];
+    rawInput.value = "";
+    clearPdfBtn.style.display = "none";
+    if (pdfStatusEl) {
+      pdfStatusEl.style.color = "var(--muted)";
+      pdfStatusEl.style.fontWeight = "400";
+      pdfStatusEl.textContent = "Supports MCQ1..N, FBQ1..N, inline blanks (____), and course summary notes";
+    }
   });
 
   // Load Sample NOUN Entries
@@ -1424,15 +1483,32 @@ function initAIGenerator() {
   // Render question card list in review deck
   function renderQuestionCards() {
     const list = ai.generatedQuestions;
+    const diagramsCount = list.filter((q) => q.diagramSvg && q.diagramSvg.trim().length > 0).length;
     if (deckCount) {
-      deckCount.textContent = `${list.length} questions generated. Review distractors, verbatim text, and explanations before publishing.`;
+      deckCount.textContent = `${list.length} questions generated${diagramsCount > 0 ? ` (${diagramsCount} with vector diagrams)` : ""}. Review distractors, verbatim text, and diagrams before publishing.`;
     }
-    cardsList.innerHTML = list.map((q, idx) => `
+    cardsList.innerHTML = list.map((q, idx) => {
+      const hasDiagram = q.diagramSvg && q.diagramSvg.trim().length > 0;
+      return `
       <div class="card" style="margin-bottom: 0; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px;" data-idx="${idx}">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span class="badge badge-primary" style="font-size: 11px;">Question ${idx + 1}</span>
-          <button type="button" class="btn btn-outline btn-sm btn-delete-ai-card" data-idx="${idx}" style="color: var(--danger); padding: 2px 8px; font-size: 11px;">✕ Delete</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="badge badge-primary" style="font-size: 11px;">Question ${idx + 1}</span>
+            ${hasDiagram ? `<span class="badge badge-success" style="font-size: 11px;">📐 Vector Diagram Attached</span>` : ""}
+          </div>
+          <div style="display: flex; gap: 6px;">
+            ${hasDiagram ? `<button type="button" class="btn btn-outline btn-sm btn-remove-ai-diagram" data-idx="${idx}" style="color: var(--warning); padding: 2px 8px; font-size: 11px;">🗑️ Remove Diagram</button>` : ""}
+            <button type="button" class="btn btn-outline btn-sm btn-delete-ai-card" data-idx="${idx}" style="color: var(--danger); padding: 2px 8px; font-size: 11px;">✕ Delete</button>
+          </div>
         </div>
+        ${hasDiagram ? `
+        <details style="margin-bottom: 10px; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;">
+          <summary style="cursor: pointer; font-size: 12px; font-weight: 700; color: var(--primary);">📐 View / Inspect Attached Question Diagram</summary>
+          <div style="margin-top: 10px; display: flex; justify-content: center; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; max-width: 440px; margin-left: auto; margin-right: auto;">
+            <div style="width: 100%; max-width: 400px;">${q.diagramSvg}</div>
+          </div>
+        </details>
+        ` : ""}
         <div class="form-group" style="margin-bottom: 8px;">
           <label style="font-size: 11px; font-weight: 700; color: var(--muted);">Verbatim Question Text:</label>
           <input type="text" class="ai-q-text" data-idx="${idx}" value="${escapeHtml(q.question)}" style="font-size: 13.5px; font-weight: 600; background: #fff;">
@@ -1453,7 +1529,8 @@ function initAIGenerator() {
           <input type="text" class="ai-q-expl" data-idx="${idx}" value="${escapeHtml(q.explanation)}" style="font-size: 12px; font-style: italic; background: #fff;">
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     // Attach event listeners for inline edits
     cardsList.querySelectorAll('.ai-q-text').forEach(el => {
@@ -1492,6 +1569,14 @@ function initAIGenerator() {
       });
     });
 
+    cardsList.querySelectorAll('.btn-remove-ai-diagram').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.idx, 10);
+        ai.generatedQuestions[idx].diagramSvg = null;
+        renderQuestionCards();
+      });
+    });
+
     cardsList.querySelectorAll('.btn-delete-ai-card').forEach(el => {
       el.addEventListener('click', (e) => {
         const idx = parseInt(e.target.dataset.idx, 10);
@@ -1523,7 +1608,7 @@ function initAIGenerator() {
 
     const raw = rawInput.value.trim();
     if (!raw) {
-      alert("Please paste your fill-in-the-blank or Q&A lines into the text box first.");
+      alert("Please upload a NOUN PDF or paste your fill-in-the-blank / Q&A lines into the text box first.");
       rawInput.focus();
       return;
     }
@@ -1531,6 +1616,8 @@ function initAIGenerator() {
     startBtn.disabled = true;
     startBtn.style.display = "none";
     stopBtn.style.display = "inline-flex";
+    stopBtn.textContent = "⏹️ Stop Generation";
+    stopBtn.disabled = false;
     progressBox.style.display = "block";
     progressLog.innerHTML = "";
     progressBar.style.width = "0%";
@@ -1538,19 +1625,24 @@ function initAIGenerator() {
 
     const batchSize = parseInt(batchSelect.value, 10) || 10;
     const courseContext = contextInput.value.trim();
+    const pdfMode = document.querySelector('input[name="ai-pdf-mode"]:checked')?.value || "option1";
+    const includeDiagrams = includeDiagramsCheckbox ? includeDiagramsCheckbox.checked : true;
 
     try {
       const results = await ai.runPipeline({
         rawText: raw,
         courseContext,
         batchSize,
+        pdfMode,
+        includeDiagrams,
         onProgress: ({ batchIndex, totalBatches, percent, statusText }) => {
           progressStatus.textContent = statusText;
           progressPercent.textContent = `${percent}%`;
           progressBar.style.width = `${percent}%`;
         },
         onBatchSuccess: ({ batchIndex, totalBatches, batchResults, totalGenerated }) => {
-          progressLog.innerHTML += `<div style="color: var(--success); margin-bottom: 2px;">✓ Batch ${batchIndex + 1}/${totalBatches}: Generated ${batchResults.length} CBT questions (${totalGenerated} total)</div>`;
+          const diagCount = batchResults.filter((q) => q.diagramSvg).length;
+          progressLog.innerHTML += `<div style="color: var(--success); margin-bottom: 2px;">✓ Batch ${batchIndex + 1}/${totalBatches}: Generated ${batchResults.length} CBT questions${diagCount > 0 ? ` (${diagCount} with diagram)` : ""} (${totalGenerated} total)</div>`;
         },
         onError: (err, batchIndex) => {
           progressLog.innerHTML += `<div style="color: var(--danger); margin-bottom: 2px;">❌ Batch ${batchIndex + 1} Error: ${err.message}</div>`;
@@ -1562,7 +1654,7 @@ function initAIGenerator() {
         renderQuestionCards();
         reviewDeck.scrollIntoView({ behavior: "smooth" });
       } else {
-        alert("No questions were generated. Please check your Gemini API key and prompt text.");
+        alert("No questions were generated. Please check your input text or PDF.");
       }
     } catch (e) {
       alert(`AI Generation Error: ${e.message}`);
@@ -1587,7 +1679,8 @@ function initAIGenerator() {
       question: "_____ is an example of an academic question.",
       options: ["Correct Answer", "Distractor 1", "Distractor 2", "Distractor 3"],
       answer: "Correct Answer",
-      explanation: "Explanation confirming the answer."
+      explanation: "Explanation confirming the answer.",
+      diagramSvg: null
     });
     renderQuestionCards();
   });
@@ -1606,7 +1699,8 @@ function initAIGenerator() {
       options: q.options,
       correctAnswer: q.answer,
       group: "General",
-      explanation: q.explanation
+      explanation: q.explanation,
+      diagramSvg: q.diagramSvg || null
     }));
 
     textArea.value = JSON.stringify(formatted, null, 2);
@@ -1625,7 +1719,7 @@ function initAIGenerator() {
       lastParsedQuestions = result.questions;
       parseResultBox.innerHTML = `
         <div class="alert alert-success">
-          ✓ Successfully loaded <b>${result.total} AI-generated questions</b> into Question Bank!
+          ✓ Successfully loaded <b>${result.total} AI-generated questions</b>${result.withDiagramsCount ? ` (including <b>${result.withDiagramsCount} vector diagrams</b>)` : ""} into Question Bank!
           <br>All questions have verified 4-option CBT structure and explanations.
         </div>
       `;

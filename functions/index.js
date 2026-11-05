@@ -147,7 +147,10 @@ exports.generateQuestions = onRequest(
       courseContext,
       batchIndex = 0,
       totalBatches = 1,
-      allowFallback = false
+      allowFallback = false,
+      batchType = "extract",
+      includeDiagrams = true,
+      pageImages = []
     } = req.body || {};
     if (!batchText || typeof batchText !== "string" || !batchText.trim()) {
       return res.status(400).json({ error: "Missing or invalid batchText parameter." });
@@ -163,37 +166,92 @@ exports.generateQuestions = onRequest(
     }
 
     const contextInstruction = courseContext && courseContext.trim().length > 0
-      ? `\nCOURSE CONTEXT: "${courseContext.trim()}". Distractors MUST be plausible scholars, theories, terms, or historical dates strictly relevant to this course.`
+      ? `\nCOURSE CONTEXT: "${courseContext.trim()}". Distractors MUST be plausible scholars, theories, formulas, terms, or historical dates strictly relevant to this course.`
       : "";
 
-    const systemPrompt = `You are a NOUN CBT exam generator.
+    const diagramInstruction = includeDiagrams
+      ? `\nDIAGRAM GENERATION RULE (diagramSvg):
+- If a question involves a graph (e.g., straight-line graph y = mx + c, T² vs M graph, slope/intercept, I-V curve, supply/demand curve), scientific apparatus (spiral spring, pendulum, vernier caliper, micrometer, circuit diagram, optics ray), logic gate, chemical structure, or biological structure/diagram (or corresponds to a figure in an attached PDF page image), generate a clean, textbook-grade SVG illustration in the "diagramSvg" field.
+- The "diagramSvg" MUST be a valid, self-contained XML string starting with <svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg"> and ending with </svg>.
+- Always include a clean light background <rect width="400" height="260" rx="12" fill="#f8fafc"/>, crisp dark axes/lines (#1e293b), accent curves/shapes (#0284c7, #16a34a, #ea580c), and legible labels (font-family="sans-serif" font-size="12" font-weight="bold" fill="#0f172a").
+- NEVER copy watermarks or phone numbers from the PDF.
+- If a question is purely conceptual/textual and does NOT benefit from a diagram, set "diagramSvg": null.`
+      : `\n- Do NOT generate diagrams; set "diagramSvg": null for all items.`;
+
+    const extractPrompt = `You are an expert NOUN (National Open University of Nigeria) CBT exam generator.
 
 TASK:
-Convert every single fill-in-the-blank / Q&A entry in the provided text into a 4-option multiple-choice question.
+Convert every single Past Question entry (separated by ---) in the provided text into a 4-option multiple-choice question.
 
-STRICT CONSTRAINTS:
-1. DO NOT rephrase, modernize, or rewrite the sentences. Keep the EXACT verbatim text and blank line from the source.
-2. The correct answer MUST be the verbatim answer given directly underneath each item in the text.
-3. Create 3 plausible distractors (options) relevant to the course context.${contextInstruction}
-4. Output strict JSON array only.
+STRICT ACCURACY & EXTRACTION CONSTRAINTS:
+1. Keep the core question sentence faithful to the NOUN source. Strip any leading labels like "MCQ1", "FBQ12", "Q1." and ignore any third-party watermarks or phone numbers.
+2. HOW TO IDENTIFY THE EXACT CORRECT ANSWER:
+   - Case A (Explicit Answer Line): If the entry has "Answer: <value>" or a separate answer line underneath the question, that <value> MUST be the exact correct answer.
+   - Case B (Inline Answer After Blank): If the answer is written inline right after a blank line on the same line (for example: "When biologists choose to learn about organisms in their natural habitats it is called____ Field study"), extract "Field study" as the correct "answer", and replace the trailing inline answer in the "question" with a clean blank "_____". NEVER ignore an inline answer after a blank!
+3. Create 3 plausible, academic distractors relevant to the question and course so there are 4 options total (including the exact correct answer).${contextInstruction}${diagramInstruction}
+4. Output a strict JSON array only.
 
 Output JSON Schema:
 [
   {
-    "question": "_____ inferred that without conflict we cannot have change",
-    "options": ["Ross (1993)", "Quicy Wright (1990)", "Kriesberg (1973)", "Stagner"],
-    "answer": "Ross (1993)",
-    "explanation": "Ross (1993) inferred that without conflict we cannot have change."
+    "question": "When biologists choose to learn about organisms in their natural habitats it is called _____",
+    "options": ["Field study", "Laboratory study", "Taxonomy", "Ecology survey"],
+    "answer": "Field study",
+    "explanation": "Studying organisms directly in their natural habitat is known as a field study.",
+    "diagramSvg": null
   }
 ]`;
+
+    const summaryPrompt = `You are an expert NOUN (National Open University of Nigeria) CBT exam generator.
+
+TASK:
+Read the provided NOUN Course Summary / Lecture Note passage and generate between 5 and 8 high-yield, exam-standard 4-option multiple-choice questions (and fill-in-the-blank style CBT questions) that test the formulas, definitions, experimental graphs/slopes, apparatus, and key facts in this passage.
+
+STRICT CONSTRAINTS:
+1. Every question and its verified "answer" MUST be 100% factually grounded in the provided summary passage.
+2. Ignore any third-party watermarks, tutor names, or phone numbers in the text.
+3. Provide 4 distinct options (the 1 exact correct answer + 3 plausible academic distractors) and a clear 1-sentence explanation.${contextInstruction}${diagramInstruction}
+4. Output a strict JSON array only.
+
+Output JSON Schema:
+[
+  {
+    "question": "In the spiral spring experiment, a graph of T² plotted on the vertical axis against mass M on the horizontal axis gives a straight line with slope equal to _____",
+    "options": ["4π²/k", "2π/k", "k/4π²", "g/L"],
+    "answer": "4π²/k",
+    "explanation": "From T² = (4π²/k)M + (4π²/k)m₀, the slope of T² against M is 4π²/k.",
+    "diagramSvg": "<svg viewBox=\\"0 0 400 260\\" xmlns=\\"http://www.w3.org/2000/svg\\"><rect width=\\"400\\" height=\\"260\\" rx=\\"12\\" fill=\\"#f8fafc\\"/>...</svg>"
+  }
+]`;
+
+    const systemPrompt = batchType === "summary" ? summaryPrompt : extractPrompt;
+
+    const userParts = [
+      {
+        text: batchType === "summary"
+          ? `Generate NOUN CBT exam questions from this course summary passage (Batch ${Number(batchIndex) + 1} of ${totalBatches}):\n\n${batchText}`
+          : `Process this batch (${Number(batchIndex) + 1} of ${totalBatches}) of NOUN past question entries:\n\n${batchText}`
+      }
+    ];
+
+    if (Array.isArray(pageImages) && pageImages.length > 0) {
+      for (const img of pageImages.slice(0, 3)) {
+        if (img && img.data) {
+          userParts.push({
+            inlineData: {
+              mimeType: img.mimeType || "image/jpeg",
+              data: img.data
+            }
+          });
+        }
+      }
+    }
 
     const requestBody = {
       contents: [
         {
           role: "user",
-          parts: [
-            { text: `Process this batch (${Number(batchIndex) + 1} of ${totalBatches}) of raw entries:\n\n${batchText}` }
-          ]
+          parts: userParts
         }
       ],
       systemInstruction: {
@@ -354,12 +412,25 @@ Output JSON Schema:
 
         options = shuffle(options);
 
+        let diagramSvg = null;
+        if (q.diagramSvg && typeof q.diagramSvg === "string") {
+          const rawSvg = q.diagramSvg.trim();
+          const svgStart = rawSvg.indexOf("<svg");
+          const svgEnd = rawSvg.lastIndexOf("</svg>");
+          if (svgStart !== -1 && svgEnd !== -1 && svgEnd > svgStart) {
+            diagramSvg = rawSvg
+              .slice(svgStart, svgEnd + 6)
+              .replace(/<script[\s\S]*?<\/script>/gi, "");
+          }
+        }
+
         return {
           id: `ai_${Date.now()}_${batchIndex}_${idx + 1}`,
           question: questionText,
           options,
           answer: correctAnswer,
           explanation: (q.explanation || `${correctAnswer} is the verified answer.`).trim(),
+          diagramSvg,
         };
       });
 

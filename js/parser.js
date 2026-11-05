@@ -45,10 +45,22 @@ export async function parseQuestionBank(rawText) {
             correctAnswer: correct,
             answerHash: hash,
             group: q.group || "G",
-            explanation: q.explanation || null
+            explanation: q.explanation || null,
+            diagramSvg: q.diagramSvg || null
           });
         }
-        return { ok: true, questions, total: questions.length, format: "JSON" };
+        const withExpl = questions.filter(q => q.explanation && q.explanation.trim().length > 0).length;
+        const withDiagrams = questions.filter(q => q.diagramSvg && q.diagramSvg.trim().length > 0).length;
+        const hasExplanations = questions.length > 0 && (withExpl / questions.length) >= 0.7;
+        return {
+          ok: true,
+          questions,
+          total: questions.length,
+          format: "JSON",
+          hasExplanations,
+          withExplanationsCount: withExpl,
+          withDiagramsCount: withDiagrams
+        };
       }
     } catch (_) {}
   }

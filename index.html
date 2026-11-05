@@ -584,17 +584,65 @@
           <div style="background: var(--primary-light); border: 1.5px solid var(--primary); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
               <div style="font-weight: 700; font-size: 14px; color: var(--primary); display: flex; align-items: center; gap: 6px;">
-                <span>🤖 NOUN CBT Exam Generator (Batched AI)</span>
-                <span class="badge badge-primary">Platform AI Active</span>
+                <span>🤖 NOUN CBT Exam & PDF Summary Generator (Batched AI)</span>
+                <span class="badge badge-primary">Platform AI + Diagrams Active</span>
               </div>
             </div>
             <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 12px; line-height: 1.45;">
-              Paste your raw fill-in-the-blank or Q&A lines directly from past exams or TMA summaries. The AI processes them in <b>safe batches of 10</b>, preserves the <b>exact verbatim question and answer</b>, generates <b>3 plausible distractors</b>, and provides explanations.
+              Upload a <b>NOUN Summary / Past Question PDF</b> or paste raw Q&A / Fill-in-the-blank lines directly. The AI strips watermarks, preserves multi-line questions and inline answers accurately, generates <b>3 plausible distractors</b>, and draws <b>clean vector diagrams</b> for graph/science questions.
             </p>
+
+            <!-- PDF Upload Dropzone & Mode Selector -->
+            <div style="background: #fff; border: 1.5px dashed var(--primary); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 24px;">📄</span>
+                  <div>
+                    <div style="font-weight: 700; font-size: 13px; color: var(--text);">Upload NOUN Summary or Past Question PDF</div>
+                    <div id="ai-pdf-status" style="font-size: 11.5px; color: var(--muted);">Supports MCQ1..N, FBQ1..N, inline blanks (____), and course summary notes</div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input type="file" id="ai-pdf-upload" accept=".pdf,application/pdf" style="display: none;">
+                  <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('ai-pdf-upload').click()" style="font-weight: 700;">
+                    📤 Choose PDF File
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-clear-ai-pdf" style="display: none; font-size: 11.5px;">
+                    ✖ Clear PDF
+                  </button>
+                </div>
+              </div>
+
+              <!-- Option 1 vs Option 2 + Diagrams Selector -->
+              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); margin: 0; background: var(--bg); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);">
+                  <input type="radio" name="ai-pdf-mode" value="option1" checked style="width: auto; margin-top: 2px;">
+                  <span>
+                    <strong style="color: var(--primary);">🎯 Option 1: Past Questions Only</strong><br>
+                    <span style="font-size: 11px; color: var(--muted); font-weight: 400;">Extracts all MCQ, FBQ, Q&A &amp; inline blanks (100% verbatim answers)</span>
+                  </span>
+                </label>
+
+                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); margin: 0; background: var(--bg); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);">
+                  <input type="radio" name="ai-pdf-mode" value="option2" style="width: auto; margin-top: 2px;">
+                  <span>
+                    <strong style="color: var(--primary);">📚 Option 2: Past Questions + Summary Notes</strong><br>
+                    <span style="font-size: 11px; color: var(--muted); font-weight: 400;">Extracts all MCQs/FBQs + generates extra questions from summary chapters</span>
+                  </span>
+                </label>
+              </div>
+
+              <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--primary); margin: 0;">
+                  <input type="checkbox" id="ai-include-diagrams" checked style="width: auto;">
+                  <span>📐 Auto-Generate Clean Vector Diagrams (Graphs, Slopes, Apparatus, Circuits &amp; Cells)</span>
+                </label>
+              </div>
+            </div>
 
             <div class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 12px; font-weight: 700;">Course Context & Subject Hint (Optional)</label>
-              <input type="text" id="ai-course-context" placeholder="e.g. GST 204: Peace Studies and Conflict Resolution" style="background: #fff; font-size: 12.5px;">
+              <input type="text" id="ai-course-context" placeholder="e.g. PHY 191: Introductory Practical Physics / GST 204" style="background: #fff; font-size: 12.5px;">
             </div>
           </div>
 
@@ -1208,6 +1256,7 @@
 
   </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
