@@ -832,7 +832,8 @@ dialog::backdrop {
    OLODO APP-ALIGNED LANDING SCREEN (Sidebar Hidden)
    Dynamic Across Mobile, Tablet, Laptop & Widescreen Desktop
    ======================================================== */
-body.landing-mode {
+body.landing-mode,
+body.onboarding-mode {
   background:
     radial-gradient(circle at 25% 20%, rgba(0, 194, 255, 0.14) 0%, transparent 45%),
     radial-gradient(circle at 75% 80%, rgba(0, 102, 255, 0.14) 0%, transparent 50%),
@@ -844,12 +845,39 @@ body.landing-mode {
 body.landing-mode .sidebar,
 body.landing-mode .mobile-topbar,
 body.landing-mode .drawer-backdrop,
-body.landing-mode main.content-area {
+body.landing-mode main.content-area,
+body.onboarding-mode .sidebar,
+body.onboarding-mode .mobile-topbar,
+body.onboarding-mode .drawer-backdrop,
+body.onboarding-mode main.content-area {
   display: none !important;
 }
 
 body:not(.landing-mode) #landing-screen {
   display: none !important;
+}
+
+body:not(.onboarding-mode) #lecturer-onboarding-screen {
+  display: none !important;
+}
+
+body.onboarding-mode #lecturer-onboarding-screen {
+  display: flex !important;
+}
+
+.onboarding-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: clamp(22px, 3vw, 34px);
+  align-items: stretch;
+  margin: auto 0;
+}
+
+@media (max-width: 860px) {
+  .onboarding-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }
 
 .olodo-logo-img {
