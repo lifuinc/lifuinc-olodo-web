@@ -280,21 +280,28 @@ function initNavigation() {
     });
   });
 
-  // Welcome Hub Pathway Buttons
-  $("#btn-welcome-go-upload")?.addEventListener("click", () => {
-    $('[data-tab="tab-upload"]')?.click();
+  // Enter Lecturer Portal (reveals Lecturer sidebar & workspace)
+  const enterLecturerPortal = (targetTab = "tab-overview") => {
+    document.body.classList.remove("landing-mode");
+    const tabBtn = $(`[data-tab="${targetTab}"]`) || $('[data-tab="tab-overview"]');
+    tabBtn?.click();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  $("#btn-enter-lecturer-portal")?.addEventListener("click", () => {
+    enterLecturerPortal("tab-overview");
   });
 
-  $("#btn-welcome-go-overview")?.addEventListener("click", () => {
-    $('[data-tab="tab-overview"]')?.click();
+  $("#btn-back-landing")?.addEventListener("click", () => {
+    document.body.classList.add("landing-mode");
+    closeDrawer();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   // Support deep link ?view=lecturer from passes.html
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get("view") === "lecturer") {
-    setTimeout(() => {
-      $('[data-tab="tab-overview"]')?.click();
-    }, 50);
+    enterLecturerPortal("tab-overview");
   }
 
   // Quick Action Buttons

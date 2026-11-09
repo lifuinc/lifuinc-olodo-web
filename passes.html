@@ -10,18 +10,21 @@
   <script src="https://js.paystack.co/v2/inline.js"></script>
   <style>
     :root {
-      --primary: #1E3A8A;
-      --primary-dark: #1E293B;
-      --primary-light: #EFF6FF;
-      --accent: #F59E0B;
-      --brand-cyan: #06B6D4;
-      --success: #10B981;
-      --success-bg: #ECFDF5;
-      --bg: #F8FAFC;
-      --card-bg: #FFFFFF;
-      --border: #E2E8F0;
-      --text: #0F172A;
-      --muted: #64748B;
+      --primary: #00C2FF;
+      --brand-blue: #0066FF;
+      --brand-mint: #00E89D;
+      --primary-dark: #0052CC;
+      --primary-light: rgba(0, 102, 255, 0.12);
+      --accent: #FFB800;
+      --brand-cyan: #00C2FF;
+      --success: #00E89D;
+      --success-bg: rgba(0, 232, 157, 0.14);
+      --bg: #050916;
+      --card-bg: #0E162A;
+      --card-hover: #14203D;
+      --border: #1A2847;
+      --text: #F1F5F9;
+      --muted: #8A9DBA;
     }
     * {
       box-sizing: border-box;
@@ -30,69 +33,77 @@
     }
     body {
       display: block;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(0, 194, 255, 0.1), transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(0, 102, 255, 0.12), transparent 45%),
+        var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
+      line-height: 1.5;
       padding-bottom: 60px;
+      min-height: 100vh;
     }
     .portal-container {
-      max-width: 620px;
-      margin: 24px auto;
+      max-width: 560px;
+      margin: 28px auto;
       padding: 0 16px;
     }
     .portal-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 28px 24px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      border-radius: 22px;
+      padding: 26px 24px;
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55);
     }
     .portal-header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
     .brand-icon {
-      width: 58px;
-      height: 58px;
-      background: linear-gradient(135deg, #06B6D4, #1E3A8A);
-      color: #fff;
+      width: 56px;
+      height: 56px;
       border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
-      margin: 0 auto 12px;
-      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+      margin: 0 auto 10px;
+      overflow: hidden;
+      box-shadow: 0 0 22px rgba(0, 194, 255, 0.3);
+    }
+    .brand-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     h1 {
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 800;
-      color: var(--primary);
+      background: linear-gradient(90deg, #0066FF 0%, #00C2FF 50%, #00E89D 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       letter-spacing: -0.02em;
       margin-bottom: 4px;
     }
     .tagline {
-      font-style: italic;
       color: var(--muted);
       font-size: 13px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     /* Academic Profile Box */
     .academic-profile-box {
-      background: var(--primary-light);
-      border: 1px solid #BFDBFE;
+      background: rgba(5, 9, 22, 0.65);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
     }
     .profile-row {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       gap: 12px;
-      font-size: 13px;
-      margin-bottom: 6px;
+      font-size: 12.5px;
+      margin-bottom: 5px;
     }
     .profile-row:last-child {
       margin-bottom: 0;
@@ -104,51 +115,51 @@
       white-space: nowrap;
     }
     .profile-value {
-      color: var(--primary);
+      color: var(--text);
       font-weight: 700;
       text-align: right;
       word-break: break-word;
     }
     .badge-course {
       display: inline-block;
-      background: #DBEAFE;
-      color: #1E40AF;
+      background: rgba(0, 194, 255, 0.16);
+      color: var(--brand-cyan);
       padding: 2px 8px;
       border-radius: 6px;
       font-weight: 800;
       font-size: 12px;
     }
     .student-info-box {
-      background: var(--bg);
+      background: rgba(5, 9, 22, 0.65);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
     }
     .student-info-box label {
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
       font-weight: 700;
       margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
     }
     .student-info-box input {
       width: 100%;
-      background: #fff;
+      background: #050916;
       border: 1.5px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 10px 14px;
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 600;
       color: var(--text);
       transition: border-color 0.2s;
     }
     .student-info-box input:focus {
       outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+      border-color: var(--brand-cyan);
+      box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.15);
     }
     .input-hint {
       display: block;
@@ -157,31 +168,32 @@
       margin-top: 5px;
     }
     .plan-card {
-      border: 2px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 14px;
-      padding: 16px 18px;
-      margin-bottom: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
-      background: #fff;
+      background: rgba(5, 9, 22, 0.55);
     }
     .plan-card:hover {
-      border-color: #93C5FD;
+      border-color: rgba(0, 194, 255, 0.45);
+      background: var(--card-hover);
     }
     .plan-card.selected {
-      border-color: var(--primary);
-      background: #F0F7FF;
-      box-shadow: 0 0 0 1px var(--primary);
+      border-color: var(--brand-cyan);
+      background: rgba(0, 102, 255, 0.14);
+      box-shadow: 0 0 0 1px var(--brand-cyan);
     }
     .plan-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 6px;
+      align-items: center;
+      margin-bottom: 4px;
     }
     .plan-title {
-      font-size: 16px;
+      font-size: 15.5px;
       font-weight: 800;
       color: var(--text);
     }
@@ -190,72 +202,56 @@
       font-size: 10px;
       font-weight: 800;
       padding: 2px 7px;
-      border-radius: 4px;
+      border-radius: 5px;
       margin-top: 2px;
     }
     .tag-best {
-      background: #D1FAE5;
-      color: #065F46;
+      background: rgba(0, 232, 157, 0.15);
+      color: var(--brand-mint);
     }
     .tag-single {
-      background: #E0E7FF;
-      color: #3730A3;
+      background: rgba(0, 194, 255, 0.15);
+      color: var(--brand-cyan);
     }
     .plan-price {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 800;
-      color: var(--primary);
+      color: var(--brand-cyan);
       text-align: right;
     }
     .plan-desc {
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--muted);
-      margin-bottom: 10px;
-    }
-    .plan-perks {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .plan-perks li {
-      font-size: 12px;
-      color: #334155;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-    .plan-perks li::before {
-      content: "✓";
-      color: var(--success);
-      font-weight: 900;
     }
     .btn-pay {
       width: 100%;
-      background: var(--primary);
+      background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
       color: #fff;
       border: none;
-      border-radius: 10px;
-      padding: 15px;
-      font-size: 16px;
-      font-weight: 700;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 15.5px;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       margin-top: 14px;
-      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 8px 20px rgba(0, 102, 255, 0.35);
+      transition: opacity 0.2s, transform 0.1s;
     }
     .btn-pay:hover {
-      background: #1E293B;
+      opacity: 0.94;
     }
     .btn-pay:active {
       transform: scale(0.99);
     }
     .btn-pay:disabled {
-      background: #94A3B8;
+      background: #1A2847;
+      color: var(--muted);
       cursor: not-allowed;
+      box-shadow: none;
       transform: none;
     }
     .trust-footer {
@@ -263,43 +259,62 @@
       align-items: center;
       justify-content: center;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 16px;
-      font-size: 12px;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 11.5px;
       color: var(--muted);
     }
     .success-card {
       display: none;
       text-align: center;
-      padding: 32px 20px;
+      padding: 28px 20px;
     }
     .success-icon {
-      width: 64px;
-      height: 64px;
+      width: 60px;
+      height: 60px;
       background: var(--success-bg);
       color: var(--success);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 900;
-      margin: 0 auto 16px;
+      margin: 0 auto 14px;
     }
     .meta-receipt {
-      background: var(--bg);
+      background: rgba(5, 9, 22, 0.65);
       border: 1px dashed var(--border);
-      padding: 14px;
+      padding: 12px 14px;
       border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 13px;
+      margin-bottom: 18px;
+      font-size: 12.5px;
       text-align: left;
     }
     .meta-receipt div {
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
     .meta-receipt div:last-child {
       margin-bottom: 0;
+    }
+    .qty-chip {
+      padding: 6px 11px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #050916;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .qty-chip:hover {
+      border-color: var(--brand-cyan);
+    }
+    .qty-chip.discount-chip {
+      border-color: rgba(0, 232, 157, 0.45);
+      background: rgba(0, 232, 157, 0.1);
+      color: var(--brand-mint);
     }
   </style>
 </head>
@@ -308,53 +323,54 @@
   <div class="portal-container">
     <div class="portal-card" id="checkout-view">
       
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
-        <a href="index.html" style="font-size: 13px; font-weight: 700; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-          ← Welcome Hub
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <a href="index.html" style="font-size: 13px; font-weight: 700; color: var(--brand-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+          ← Back
         </a>
-        <a href="index.html?view=lecturer" style="font-size: 12.5px; font-weight: 700; color: #475569; background: #F1F5F9; padding: 6px 12px; border-radius: 8px; text-decoration: none;">
-          👨‍🏫 Lecturer Portal →
-        </a>
+        <span style="font-size: 11px; font-weight: 800; color: var(--brand-mint); background: rgba(0, 232, 157, 0.12); padding: 4px 10px; border-radius: 999px;">
+          10% OFF above 5 PINs
+        </span>
       </div>
 
       <div class="portal-header">
-        <div class="brand-icon">🎟️</div>
-        <h1>Student & Campus Voucher Store</h1>
-        <div class="tagline">Generate single or bulk access vouchers instantly · Automatic 10% discount above 5 vouchers!</div>
+        <div class="brand-icon">
+          <img src="assets/logo.png" alt="Olodo Logo">
+        </div>
+        <h1>Access Vouchers</h1>
+        <div class="tagline">Instant single or bulk PINs for the Olodo App</div>
       </div>
 
       <!-- Verified Student Academic Profile (Auto-populated from app link) -->
       <div class="academic-profile-box">
         <div class="profile-row">
-          <span class="profile-label">Institution:</span>
+          <span class="profile-label">Institution</span>
           <span class="profile-value" id="disp-institution">University / Higher Institution</span>
         </div>
         <div class="profile-row">
-          <span class="profile-label">Department:</span>
+          <span class="profile-label">Department</span>
           <span class="profile-value" id="disp-department">General Studies</span>
         </div>
         <div class="profile-row">
-          <span class="profile-label">Level & Session:</span>
+          <span class="profile-label">Cohort</span>
           <span class="profile-value" id="disp-level-sem">200 Level · 1st Semester</span>
         </div>
         <div class="profile-row" id="row-target-course" style="display: none;">
-          <span class="profile-label">Target Course:</span>
+          <span class="profile-label">Course</span>
           <span class="profile-value">
             <span class="badge-course" id="disp-course">GST 101</span>
-            <span id="disp-course-title" style="margin-left: 4px; font-weight: normal; color: #475569;"></span>
+            <span id="disp-course-title" style="margin-left: 4px; font-weight: normal; color: var(--muted);"></span>
           </span>
         </div>
         <div class="profile-row" id="row-student-id" style="display: none;">
-          <span class="profile-label">Student ID:</span>
+          <span class="profile-label">Student ID</span>
           <span class="profile-value" id="disp-student-id"></span>
         </div>
       </div>
 
       <!-- Student / Buyer Email Field -->
       <div class="student-info-box">
-        <label for="student-email">Student / Buyer Email Address</label>
+        <label for="student-email">Email Address</label>
         <input type="email" id="student-email" placeholder="student@university.edu.ng" required autocomplete="email">
-        <span class="input-hint">Your voucher PIN(s) and pass activation will be linked to this email.</span>
       </div>
 
       <!-- PLAN 1: FULL SEMESTER / TERM PASS -->
@@ -362,121 +378,97 @@
         <div class="plan-header">
           <div>
             <div class="plan-title" id="full-pass-title">Full Semester Pass</div>
-            <span class="plan-tag tag-best">BEST VALUE · UNLOCKS ALL COURSES (180 DAYS)</span>
+            <span class="plan-tag tag-best">ALL COURSES · 180 DAYS</span>
           </div>
-          <div>
-            <div class="plan-price">₦5,000</div>
-          </div>
+          <div class="plan-price">₦5,000</div>
         </div>
-        <div class="plan-desc" id="full-pass-desc">Unlocks ALL subject question banks for 180 days.</div>
-        <ul class="plan-perks">
-          <li id="perk-all-courses">Unlocks all subjects in your academic level & semester</li>
-          <li>Unlimited active recall study rounds & quiz attempts</li>
-          <li>100% offline access ready on your phone</li>
-          <li>Verified answer keys, explanations & diagrams</li>
-        </ul>
+        <div class="plan-desc" id="full-pass-desc">Unlocks all courses in your level & semester.</div>
+        <span id="perk-all-courses" style="display:none;"></span>
       </div>
 
       <!-- PLAN 2: MONTHLY ACCESS PASS (₦1,500) -->
       <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')">
         <div class="plan-header">
           <div>
-            <div class="plan-title">Monthly Access Pass</div>
-            <span class="plan-tag" style="background: #FEF3C7; color: #92400E;">⚡ 30-DAY SPRINT · ALL COURSES</span>
+            <div class="plan-title">Monthly Pass</div>
+            <span class="plan-tag" style="background: rgba(255, 184, 0, 0.15); color: #FFB800;">ALL COURSES · 30 DAYS</span>
           </div>
-          <div>
-            <div class="plan-price">₦1,500</div>
-          </div>
+          <div class="plan-price">₦1,500</div>
         </div>
-        <div class="plan-desc">Unlocks ALL courses in your level & semester for 30 days.</div>
-        <ul class="plan-perks">
-          <li>Full access to all courses in your level & semester for 30 days</li>
-          <li>Ideal for exam revision & test preparation month</li>
-          <li>100% offline drills, explanations & CBT simulator</li>
-        </ul>
+        <div class="plan-desc">30-day full access to all courses in your cohort.</div>
       </div>
 
       <!-- PLAN 3: SINGLE SUBJECT PASS -->
       <div class="plan-card" id="plan-single" onclick="selectPlan('single')">
         <div class="plan-header">
           <div>
-            <div class="plan-title" id="single-pass-title">Single Subject / Course Pass</div>
-            <span class="plan-tag tag-single">TARGETED PREP · 1 COURSE</span>
+            <div class="plan-title" id="single-pass-title">Single Course Pass</div>
+            <span class="plan-tag tag-single">1 COURSE · 180 DAYS</span>
           </div>
-          <div>
-            <div class="plan-price">₦1,000</div>
-          </div>
+          <div class="plan-price">₦1,000</div>
         </div>
-        <div class="plan-desc" id="single-pass-desc">Unlocks 1 selected course for 180 days.</div>
-        <ul class="plan-perks">
-          <li id="perk-single-course">Unlimited study & quiz attempts for 1 course</li>
-          <li>100% offline access ready on your phone</li>
-          <li>Verified answer keys and explanations</li>
-        </ul>
+        <div class="plan-desc" id="single-pass-desc">Unlocks 1 selected course for the semester.</div>
+        <span id="perk-single-course" style="display:none;"></span>
         <div id="custom-course-code-wrap" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: none;" onclick="event.stopPropagation();">
-          <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Target Course Code (Optional)</label>
-          <input type="text" id="custom-course-input" placeholder="e.g. GST 101 or MTH 101 (or leave blank for any 1 course)" style="width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 700;">
+          <input type="text" id="custom-course-input" placeholder="Course Code (e.g. GST 101)" style="width: 100%; padding: 8px 12px; background: #050916; color: var(--text); border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 700;">
         </div>
       </div>
 
       <!-- SINGLE & MULTIPLE VOUCHER QUANTITY SELECTOR (WITH 10% BULK DISCOUNT > 5) -->
-      <div style="background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-          <div>
-            <div style="font-size: 14px; font-weight: 800; color: var(--text);">🎟️ Number of Vouchers to Generate</div>
-            <div style="font-size: 12px; color: var(--muted);">Buy for yourself (1 PIN) or generate multiple PINs for classmates</div>
-          </div>
-          <span style="background: #DCFCE7; color: #166534; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px;">
-            🔥 10% OFF above 5 PINs!
+      <div style="background: rgba(5, 9, 22, 0.65); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="font-size: 13.5px; font-weight: 800; color: var(--text);">Number of Vouchers</div>
+          <span style="font-size: 11px; font-weight: 800; color: var(--brand-mint);">
+            6+ PINs = 10% OFF
           </span>
         </div>
 
         <!-- Quick Quantity Preset Chips -->
-        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
-          <button type="button" class="qty-chip" onclick="setVoucherQty(1)" style="padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">1 PIN</button>
-          <button type="button" class="qty-chip" onclick="setVoucherQty(5)" style="padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">5 PINs</button>
-          <button type="button" class="qty-chip" onclick="setVoucherQty(6)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">6 PINs (-10%)</button>
-          <button type="button" class="qty-chip" onclick="setVoucherQty(10)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">10 PINs (-10%)</button>
-          <button type="button" class="qty-chip" onclick="setVoucherQty(20)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">20 PINs (-10%)</button>
-          <button type="button" class="qty-chip" onclick="setVoucherQty(50)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">50 PINs (-10%)</button>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+          <button type="button" class="qty-chip" onclick="setVoucherQty(1)">1</button>
+          <button type="button" class="qty-chip" onclick="setVoucherQty(5)">5</button>
+          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(6)">6 (-10%)</button>
+          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(10)">10 (-10%)</button>
+          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(20)">20 (-10%)</button>
+          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(50)">50 (-10%)</button>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <label for="voucher-qty-input" style="font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap;">Custom Quantity:</label>
-          <input type="number" id="voucher-qty-input" value="1" min="1" max="200" oninput="onQtyInputChanged()" style="width: 110px; padding: 8px 12px; border: 1.5px solid var(--primary); border-radius: 8px; font-size: 15px; font-weight: 800; color: var(--text);">
-          <div id="discount-live-banner" style="font-size: 12px; font-weight: 700; color: var(--muted); flex: 1;">
-            💡 Buy 6+ vouchers to get an automatic <b>10% discount</b>!
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="voucher-qty-input" style="font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap;">Quantity:</label>
+          <input type="number" id="voucher-qty-input" value="1" min="1" max="200" oninput="onQtyInputChanged()" style="width: 90px; padding: 7px 10px; background: #050916; border: 1.5px solid var(--brand-cyan); border-radius: 8px; font-size: 14px; font-weight: 800; color: var(--text);">
+          <div id="discount-live-banner" style="font-size: 11.5px; font-weight: 700; color: var(--muted); flex: 1;">
+            6+ PINs gets 10% off
           </div>
         </div>
 
         <!-- Price Calculation Breakdown -->
-        <div id="price-breakdown-box" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 13px; display: flex; flex-direction: column; gap: 4px;">
+        <div id="price-breakdown-box" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 12.5px; display: flex; flex-direction: column; gap: 4px;">
           <div style="display: flex; justify-content: space-between; color: var(--muted);">
             <span id="calc-subtotal-label">1 × ₦5,000</span>
             <span id="calc-subtotal-val">₦5,000</span>
           </div>
-          <div id="calc-discount-row" style="display: none; justify-content: space-between; color: #059669; font-weight: 800;">
-            <span>🎉 Bulk Voucher Discount (10% OFF):</span>
+          <div id="calc-discount-row" style="display: none; justify-content: space-between; color: var(--brand-mint); font-weight: 800;">
+            <span>10% Bulk Discount</span>
             <span id="calc-discount-val">-₦0</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: var(--primary); padding-top: 4px;">
-            <span>Total Payable:</span>
+          <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: var(--brand-cyan); padding-top: 4px;">
+            <span>Total</span>
             <span id="calc-total-val">₦5,000</span>
           </div>
         </div>
       </div>
 
       <button class="btn-pay" id="btn-pay-now" onclick="triggerPayment()">
-        <span>🔒 Pay & Generate Voucher(s)</span>
+        <span>Pay & Generate Voucher</span>
         <span id="btn-amount-label">· ₦5,000</span>
       </button>
 
       <div class="trust-footer">
-        <span>⚡ Bank Transfer</span>
+        <span>Bank Transfer</span>
         <span>·</span>
-        <span>📱 USSD / OPay / Palmpay</span>
+        <span>OPay / Palmpay</span>
         <span>·</span>
-        <span>💳 Verve / Visa / Mastercard</span>
+        <span>Card / USSD</span>
       </div>
 
     </div>
@@ -484,54 +476,47 @@
     <!-- SUCCESS CONFIRMATION VIEW -->
     <div class="portal-card success-card" id="success-view">
       <div class="success-icon">✓</div>
-      <h1 style="color: var(--success); margin-bottom: 8px;" id="success-heading">Voucher(s) Generated & Active!</h1>
-      <p style="color: var(--text); font-size: 15px; margin-bottom: 14px;" id="success-detail">
-        Your institutional access voucher(s) are now live and ready for redemption.
+      <h1 style="margin-bottom: 6px;" id="success-heading">Voucher Ready</h1>
+      <p style="color: var(--muted); font-size: 13.5px; margin-bottom: 14px;" id="success-detail">
+        Your voucher PIN(s) are active.
       </p>
       
       <div class="meta-receipt">
-        <div><strong>Transaction Reference:</strong> <span id="success-ref"></span></div>
-        <div><strong>Buyer Email:</strong> <span id="success-email"></span></div>
-        <div><strong>Pass Type & Quantity:</strong> <span id="success-plan"></span></div>
+        <div><strong>Ref:</strong> <span id="success-ref"></span></div>
+        <div><strong>Email:</strong> <span id="success-email"></span></div>
+        <div><strong>Pass:</strong> <span id="success-plan"></span></div>
       </div>
 
       <!-- Self-Service Generated Voucher PIN(s) Box -->
-      <div style="background: #EFF6FF; border: 2px solid #1E3A8A; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
-        <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #1E3A8A; margin-bottom: 8px;" id="success-pins-label">
-          🎟️ Your Instant Activation Voucher PIN(s)
+      <div style="background: rgba(5, 9, 22, 0.75); border: 1.5px solid var(--brand-cyan); border-radius: 14px; padding: 16px; margin-bottom: 18px; text-align: center;">
+        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand-cyan); margin-bottom: 8px;" id="success-pins-label">
+          Activation Voucher PIN(s)
         </div>
-        <div id="success-voucher-pin" style="font-family: monospace; font-size: 19px; font-weight: 900; color: #0F172A; letter-spacing: 0.05em; background: #FFFFFF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; user-select: all;">
+        <div id="success-voucher-pin" style="font-family: monospace; font-size: 18px; font-weight: 900; color: var(--text); letter-spacing: 0.05em; background: #050916; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; user-select: all;">
           OLODO-XXXX-XXXX
         </div>
         <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-          <button type="button" id="btn-copy-self-pin" onclick="copyGeneratedPin()" style="background: #1E3A8A; color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
-            📋 Copy All PIN(s)
+          <button type="button" id="btn-copy-self-pin" onclick="copyGeneratedPin()" style="background: var(--brand-blue); color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer;">
+            Copy PIN(s)
           </button>
-          <button type="button" onclick="sharePinsWhatsApp()" style="background: #10B981; color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
-            💬 Copy for WhatsApp
+          <button type="button" onclick="sharePinsWhatsApp()" style="background: rgba(0, 232, 157, 0.16); color: var(--brand-mint); border: 1px solid rgba(0, 232, 157, 0.4); border-radius: 8px; padding: 9px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer;">
+            Copy for WhatsApp
           </button>
-          <button type="button" onclick="downloadPinsCsv()" style="background: #fff; color: #1E3A8A; border: 1.5px solid #1E3A8A; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer;">
-            📥 Download CSV
+          <button type="button" onclick="downloadPinsCsv()" style="background: transparent; color: var(--brand-cyan); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer;">
+            CSV
           </button>
-        </div>
-        <div style="font-size: 11.5px; color: #475569; margin-top: 8px; line-height: 1.4;">
-          Save or copy your PIN(s)! Redeem anytime inside the Olodo App under <b>Unlock Access → Institutional Code</b>.
         </div>
       </div>
 
-      <div style="font-size: 14px; color: var(--muted); margin-bottom: 18px;">
-        📲 <b>Next Step:</b> Tap below to return to the <b>Olodo App</b>:
-      </div>
-      
-      <a id="btn-return-app" href="olodo://activated?status=success" class="btn-pay" style="background: var(--success); text-decoration: none;">
-        <span>✓ Return to Olodo App</span>
+      <a id="btn-return-app" href="olodo://activated?status=success" class="btn-pay" style="text-decoration: none;">
+        <span>Return to Olodo App</span>
       </a>
     </div>
 
-    <div style="text-align: center; margin-top: 24px; font-size: 12px; color: var(--muted);">
-      <a href="index.html" style="color: var(--primary); font-weight: 700; text-decoration: none;">Welcome Hub</a> ·
-      <a href="privacy.html" style="color: var(--muted);">Privacy Policy</a> · 
-      <span>Olodo Learning Platform © 2026 Lifu Inc</span>
+    <div style="text-align: center; margin-top: 20px; font-size: 12px; color: var(--muted);">
+      <a href="index.html" style="color: var(--brand-cyan); font-weight: 700; text-decoration: none;">Home</a> ·
+      <a href="privacy.html" style="color: var(--muted); text-decoration: none;">Privacy</a> · 
+      <span>Olodo © 2026</span>
     </div>
   </div>
 
@@ -629,11 +614,11 @@
       }
       if (liveBanner) {
         if (hasDiscount) {
-          liveBanner.style.color = "#059669";
-          liveBanner.innerHTML = `🎉 <b>10% Bulk Discount Applied!</b> You save <b>₦${discount.toLocaleString()}</b>`;
+          liveBanner.style.color = "var(--brand-mint)";
+          liveBanner.innerHTML = `10% OFF applied (-₦${discount.toLocaleString()})`;
         } else {
           liveBanner.style.color = "var(--muted)";
-          liveBanner.innerHTML = `💡 Buy 6+ vouchers to get an automatic <b>10% discount</b>!`;
+          liveBanner.innerHTML = `6+ PINs gets 10% off`;
         }
       }
     };
