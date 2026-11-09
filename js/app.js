@@ -282,8 +282,7 @@ function initNavigation() {
 
   // Enter Lecturer Portal (checks Auth & Approval gate before showing full dashboard)
   window.enterLecturerPortal = async (targetTab = "tab-overview") => {
-    const hasActiveTabSession = sessionStorage.getItem("olodo_active_lecturer_session") === "1";
-    if (!hasActiveTabSession && currentUser) {
+    if (currentUser && (currentUser.isAnonymous || !currentUser.email)) {
       try {
         await signOut(auth);
       } catch (_) {}
@@ -291,8 +290,18 @@ function initNavigation() {
       currentLecturerProfile = null;
     }
 
-    const isSuperAdmin = currentUser && currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-    const isApproved = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified" && currentLecturerProfile.applied === true);
+    const isSuperAdmin = Boolean(
+      currentUser &&
+      currentUser.email &&
+      currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
+    );
+    const isApproved =
+      isSuperAdmin ||
+      Boolean(
+        currentLecturerProfile &&
+        currentLecturerProfile.status === "verified" &&
+        currentLecturerProfile.applied === true
+      );
 
     if (!currentUser || !isApproved) {
       document.body.classList.remove("landing-mode");
@@ -303,7 +312,8 @@ function initNavigation() {
     }
 
     document.body.classList.remove("landing-mode", "onboarding-mode");
-    const tabBtn = $(`[data-tab="${targetTab}"]`) || $('[data-tab="tab-overview"]');
+    const defaultTab = isSuperAdmin && targetTab === "tab-overview" ? "tab-admin-vetting" : targetTab;
+    const tabBtn = $(`[data-tab="${defaultTab}"]`) || $('[data-tab="tab-overview"]');
     tabBtn?.click();
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -399,12 +409,16 @@ function initTierControls() {
 
     // Populate Period dropdown (Term vs Semester vs Series)
     const periodSelect = $("#course-period");
-    periodSelect.innerHTML = cfg.periods
-      .map((p, idx) => `<option value="${p}" ${idx === 0 ? "selected" : ""}>${p}</option>`)
-      .join("");
+    if (periodSelect) {
+      periodSelect.innerHTML = cfg.periods
+        .map((p, idx) => `<option value="${p}" ${idx === 0 ? "selected" : ""}>${p}</option>`)
+        .join("");
+    }
 
     // Standard pass price
-    $("#course-price").value = "₦1,000";
+    if ($("#course-price")) {
+      $("#course-price").value = "₦1,000";
+    }
   }
 
   tierSelect?.addEventListener("change", () => {
@@ -575,14 +589,45 @@ function updateCourseAvailabilityUI() {
 // ==========================================
 let isEditingApplication = false;
 
+function formatFirebaseAuthError(err) {
+  const code = err?.code || "";
+  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+    return "Invalid email or password. If you are a new lecturer, please click 'Create Account'.";
+  }
+  if (code === "auth/email-already-in-use") {
+    return "An account with this email already exists. Please click 'Sign In' instead.";
+  }
+  if (code === "auth/weak-password") {
+    return "Password is too short. Please enter at least 6 characters.";
+  }
+  if (code === "auth/invalid-email") {
+    return "Please enter a valid email address.";
+  }
+  if (code === "auth/popup-closed-by-user") {
+    return "Google Sign-In popup was closed before completing.";
+  }
+  return err?.message || "Authentication failed. Please try again.";
+}
+
+function populateApplicationDropdowns() {
+  const deptSelect = $("#apply-department");
+  if (deptSelect && deptSelect.options.length <= 1) {
+    const depts = TIERS_CONFIG.tertiary.departments || [];
+    deptSelect.innerHTML =
+      `<option value="" disabled selected>Select your department...</option>` +
+      depts.map((d) => `<option value="${d}">${d}</option>`).join("");
+  }
+}
+
 function syncLecturerOnboardingUI() {
   const authCard = $("#onboard-auth-card");
   const applyCard = $("#onboard-apply-card");
   const pendingCard = $("#onboard-pending-card");
   if (!authCard || !applyCard || !pendingCard) return;
 
-  const hasActiveTabSession = sessionStorage.getItem("olodo_active_lecturer_session") === "1";
-  if (!currentUser || !hasActiveTabSession) {
+  populateApplicationDropdowns();
+
+  if (!currentUser || currentUser.isAnonymous || !currentUser.email) {
     authCard.style.display = "block";
     applyCard.style.display = "none";
     pendingCard.style.display = "none";
@@ -590,13 +635,20 @@ function syncLecturerOnboardingUI() {
   }
 
   const isSuperAdmin = currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-  const isApproved = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified" && currentLecturerProfile.applied === true);
+  const isApproved =
+    isSuperAdmin ||
+    Boolean(
+      currentLecturerProfile &&
+      currentLecturerProfile.status === "verified" &&
+      currentLecturerProfile.applied === true
+    );
 
   // If approved while on the onboarding screen, immediately unlock the full Lecturer Studio dashboard!
   if (isApproved) {
     if (document.body.classList.contains("onboarding-mode")) {
       document.body.classList.remove("onboarding-mode", "landing-mode");
-      const tabBtn = $('[data-tab="tab-overview"]');
+      const targetTab = isSuperAdmin ? "tab-admin-vetting" : "tab-overview";
+      const tabBtn = $(`[data-tab="${targetTab}"]`) || $('[data-tab="tab-overview"]');
       tabBtn?.click();
     }
     return;
@@ -619,74 +671,107 @@ function syncLecturerOnboardingUI() {
     if ($("#apply-full-name") && !$("#apply-full-name").value) {
       $("#apply-full-name").value = currentLecturerProfile?.displayName || currentUser.displayName || "";
     }
-    if ($("#apply-institution") && !$("#apply-institution").value && currentLecturerProfile?.institution && currentLecturerProfile.institution !== "General") {
-      $("#apply-institution").value = currentLecturerProfile.institution;
+    const savedInst = currentLecturerProfile?.institution || "";
+    if ($("#apply-institution") && !$("#apply-institution").value && savedInst && savedInst !== "General") {
+      const instSelect = $("#apply-institution");
+      const hasOption = Array.from(instSelect.options).some((opt) => opt.value === savedInst);
+      if (hasOption) {
+        instSelect.value = savedInst;
+        if ($("#apply-custom-inst-group")) $("#apply-custom-inst-group").style.display = "none";
+      } else {
+        instSelect.value = "__OTHER__";
+        if ($("#apply-custom-inst-group")) $("#apply-custom-inst-group").style.display = "block";
+        if ($("#apply-custom-institution")) $("#apply-custom-institution").value = savedInst;
+      }
     }
-    if ($("#apply-department") && !$("#apply-department").value) {
-      $("#apply-department").value = currentLecturerProfile?.department || "";
+    if ($("#apply-department") && !$("#apply-department").value && currentLecturerProfile?.department) {
+      $("#apply-department").value = currentLecturerProfile.department;
     }
-    if ($("#apply-courses") && !$("#apply-courses").value) {
-      $("#apply-courses").value = currentLecturerProfile?.coursesTaught || "";
-    }
-    if ($("#apply-phone") && !$("#apply-phone").value) {
-      $("#apply-phone").value = currentLecturerProfile?.phone || "";
+    if ($("#apply-phone") && !$("#apply-phone").value && currentLecturerProfile?.phone) {
+      $("#apply-phone").value = currentLecturerProfile.phone;
     }
   } else {
     applyCard.style.display = "none";
     pendingCard.style.display = "block";
 
     const isRejected = currentLecturerProfile?.status === "rejected";
+    const iconEl = $("#pending-status-icon");
+    if (iconEl) {
+      iconEl.textContent = isRejected ? "✕" : "✓";
+      iconEl.style.background = isRejected ? "rgba(255, 77, 106, 0.14)" : "rgba(0, 232, 157, 0.14)";
+      iconEl.style.color = isRejected ? "#FF4D6A" : "#00E89D";
+      iconEl.style.borderColor = isRejected ? "rgba(255, 77, 106, 0.35)" : "rgba(0, 232, 157, 0.35)";
+    }
     if ($("#pending-status-title")) {
-      $("#pending-status-title").textContent = isRejected ? "Application Declined" : "Application Pending Approval";
+      $("#pending-status-title").textContent = isRejected
+        ? "Application Declined"
+        : "Application Submitted Successfully";
     }
     if ($("#pending-status-desc")) {
-      $("#pending-status-desc").textContent = isRejected
-        ? "Your lecturer application was not approved. You may update your academic details below for re-evaluation."
-        : "Your lecturer application has been received. Your dashboard to upload and manage question banks will unlock as soon as your profile is approved.";
+      $("#pending-status-desc").innerHTML = isRejected
+        ? "Your lecturer application was declined by the admin team. You may update your academic details below to re-apply."
+        : "Thank you for applying! Your application has been sent to our admin team and <b>you will be contacted by us</b>. Once approved, signing in will open your dashboard to upload and manage question banks.";
     }
     if ($("#pend-name")) $("#pend-name").textContent = currentLecturerProfile?.displayName || currentUser.email;
     if ($("#pend-inst")) $("#pend-inst").textContent = currentLecturerProfile?.institution || "-";
     if ($("#pend-dept")) $("#pend-dept").textContent = currentLecturerProfile?.department || "-";
-    if ($("#pend-courses")) $("#pend-courses").textContent = currentLecturerProfile?.coursesTaught || "-";
+    if ($("#pend-phone")) $("#pend-phone").textContent = currentLecturerProfile?.phone || "-";
   }
 }
 
 function initAuth() {
   const modal = $("#auth-modal");
 
-  $("#btn-show-login")?.addEventListener("click", () => modal.showModal());
-  $("#btn-close-auth")?.addEventListener("click", () => modal.close());
+  populateApplicationDropdowns();
+
+  $("#apply-institution")?.addEventListener("change", () => {
+    const isOther = $("#apply-institution")?.value === "__OTHER__";
+    if ($("#apply-custom-inst-group")) {
+      $("#apply-custom-inst-group").style.display = isOther ? "block" : "none";
+    }
+  });
+
+  $("#btn-show-login")?.addEventListener("click", () => modal?.showModal());
+  $("#btn-close-auth")?.addEventListener("click", () => modal?.close());
 
   // Google Sign-In (both modal and onboarding screen)
-  const handleGoogleSignIn = async (errEl) => {
+  const handleGoogleSignIn = async (errEl, btnEl) => {
+    const origHtml = btnEl ? btnEl.innerHTML : "";
     try {
       if (errEl) errEl.style.display = "none";
-      sessionStorage.setItem("olodo_active_lecturer_session", "1");
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.textContent = "Connecting to Google...";
+      }
       await signInWithPopup(auth, googleProvider);
       modal?.close();
     } catch (err) {
       if (errEl) {
-        errEl.textContent = err.message;
+        errEl.textContent = formatFirebaseAuthError(err);
         errEl.style.display = "block";
+      }
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = origHtml;
       }
     }
   };
 
-  $("#btn-google-auth")?.addEventListener("click", () => handleGoogleSignIn($("#auth-error")));
-  $("#btn-onboard-google")?.addEventListener("click", () => handleGoogleSignIn($("#onboard-auth-error")));
+  $("#btn-google-auth")?.addEventListener("click", () => handleGoogleSignIn($("#auth-error"), $("#btn-google-auth")));
+  $("#btn-onboard-google")?.addEventListener("click", () => handleGoogleSignIn($("#onboard-auth-error"), $("#btn-onboard-google")));
 
   // Email Sign-In (both modal and onboarding screen)
   $("#btn-email-signin")?.addEventListener("click", async () => {
-    const email = $("#auth-email").value.trim();
-    const pass = $("#auth-password").value.trim();
+    const email = ($("#auth-email")?.value || "").trim();
+    const pass = ($("#auth-password")?.value || "").trim();
     if (!email || !pass) return;
     try {
       $("#auth-error").style.display = "none";
-      sessionStorage.setItem("olodo_active_lecturer_session", "1");
       await signInWithEmailAndPassword(auth, email, pass);
-      modal.close();
+      modal?.close();
     } catch (err) {
-      $("#auth-error").textContent = err.message;
+      $("#auth-error").textContent = formatFirebaseAuthError(err);
       $("#auth-error").style.display = "block";
     }
   });
@@ -695,6 +780,7 @@ function initAuth() {
     const email = ($("#onboard-email")?.value || "").trim();
     const pass = ($("#onboard-password")?.value || "").trim();
     const errEl = $("#onboard-auth-error");
+    const btn = $("#btn-onboard-signin");
     if (!email || !pass) {
       if (errEl) {
         errEl.textContent = "Please enter your email and password.";
@@ -704,28 +790,35 @@ function initAuth() {
     }
     try {
       if (errEl) errEl.style.display = "none";
-      sessionStorage.setItem("olodo_active_lecturer_session", "1");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Signing in...";
+      }
       await signInWithEmailAndPassword(auth, email, pass);
     } catch (err) {
       if (errEl) {
-        errEl.textContent = err.message;
+        errEl.textContent = formatFirebaseAuthError(err);
         errEl.style.display = "block";
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Sign In";
       }
     }
   });
 
   // Email Sign-Up (both modal and onboarding screen)
   $("#btn-email-signup")?.addEventListener("click", async () => {
-    const email = $("#auth-email").value.trim();
-    const pass = $("#auth-password").value.trim();
+    const email = ($("#auth-email")?.value || "").trim();
+    const pass = ($("#auth-password")?.value || "").trim();
     if (!email || !pass) return;
     try {
       $("#auth-error").style.display = "none";
-      sessionStorage.setItem("olodo_active_lecturer_session", "1");
       await createUserWithEmailAndPassword(auth, email, pass);
-      modal.close();
+      modal?.close();
     } catch (err) {
-      $("#auth-error").textContent = err.message;
+      $("#auth-error").textContent = formatFirebaseAuthError(err);
       $("#auth-error").style.display = "block";
     }
   });
@@ -734,6 +827,7 @@ function initAuth() {
     const email = ($("#onboard-email")?.value || "").trim();
     const pass = ($("#onboard-password")?.value || "").trim();
     const errEl = $("#onboard-auth-error");
+    const btn = $("#btn-onboard-signup");
     if (!email || !pass) {
       if (errEl) {
         errEl.textContent = "Please enter your email and a password (at least 6 characters).";
@@ -743,12 +837,20 @@ function initAuth() {
     }
     try {
       if (errEl) errEl.style.display = "none";
-      sessionStorage.setItem("olodo_active_lecturer_session", "1");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Creating Account...";
+      }
       await createUserWithEmailAndPassword(auth, email, pass);
     } catch (err) {
       if (errEl) {
-        errEl.textContent = err.message;
+        errEl.textContent = formatFirebaseAuthError(err);
         errEl.style.display = "block";
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Create Account";
       }
     }
   });
@@ -757,16 +859,25 @@ function initAuth() {
   $("#btn-submit-lecturer-app")?.addEventListener("click", async () => {
     if (!currentUser) return;
     const fullName = ($("#apply-full-name")?.value || "").trim();
-    const institution = ($("#apply-institution")?.value || "").trim();
+    let institution = ($("#apply-institution")?.value || "").trim();
+    if (institution === "__OTHER__") {
+      institution = ($("#apply-custom-institution")?.value || "").trim();
+    }
     const department = ($("#apply-department")?.value || "").trim();
-    const coursesTaught = ($("#apply-courses")?.value || "").trim();
     const phone = ($("#apply-phone")?.value || "").trim();
+    const errEl = $("#apply-form-error");
 
-    if (!fullName || !institution || !department || !coursesTaught) {
-      alert("Please fill in your Full Name, Institution, Department, and Courses you coordinate.");
+    if (!fullName || !institution || !department || !phone) {
+      if (errEl) {
+        errEl.textContent = "Please enter your Full Name, select your Institution and Department, and provide your Phone Number.";
+        errEl.style.display = "block";
+      } else {
+        alert("Please enter your Full Name, select your Institution and Department, and provide your Phone Number.");
+      }
       return;
     }
 
+    if (errEl) errEl.style.display = "none";
     const btn = $("#btn-submit-lecturer-app");
     if (btn) btn.disabled = true;
 
@@ -778,7 +889,6 @@ function initAuth() {
         displayName: fullName,
         institution: institution,
         department: department,
-        coursesTaught: coursesTaught,
         phone: phone,
         applied: true,
         status: currentLecturerProfile?.status === "verified" ? "verified" : "pending",
@@ -789,7 +899,12 @@ function initAuth() {
       isEditingApplication = false;
       syncLecturerOnboardingUI();
     } catch (err) {
-      alert("Error submitting application: " + err.message);
+      if (errEl) {
+        errEl.textContent = "Error submitting application: " + err.message;
+        errEl.style.display = "block";
+      } else {
+        alert("Error submitting application: " + err.message);
+      }
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -810,14 +925,13 @@ function initAuth() {
     syncLecturerOnboardingUI();
     if (btn) btn.textContent = "🔄 Check Approval Status";
     if (currentLecturerProfile?.status !== "verified" && !isSuperAdmin) {
-      alert("⏳ Your application is still under review by the Olodo Academic Vetting Board.");
+      alert("⏳ Your application is still under review. You will be contacted by us once approved.");
     }
   });
 
   // Sign Out buttons
   const doSignOut = async () => {
     isEditingApplication = false;
-    sessionStorage.removeItem("olodo_active_lecturer_session");
     await signOut(auth);
   };
   $("#btn-logout")?.addEventListener("click", doSignOut);
@@ -825,40 +939,71 @@ function initAuth() {
   $("#btn-onboard-logout-2")?.addEventListener("click", doSignOut);
 
   onAuthStateChanged(auth, async (user) => {
+    // Ignore anonymous sessions created by passes.html on the same domain
+    if (user && (user.isAnonymous || !user.email)) {
+      try {
+        await signOut(auth);
+      } catch (_) {}
+      currentUser = null;
+      currentLecturerProfile = null;
+      syncLecturerOnboardingUI();
+      return;
+    }
+
     currentUser = user;
     if (user) {
-      $("#logged-out-view").style.display = "none";
-      $("#logged-in-view").style.display = "block";
+      if ($("#logged-out-view")) $("#logged-out-view").style.display = "none";
+      if ($("#logged-in-view")) $("#logged-in-view").style.display = "block";
 
       const name = user.displayName || user.email.split("@")[0];
-      $("#display-user-name").textContent = name;
-      $("#avatar-initial").textContent = name.charAt(0).toUpperCase();
+      if ($("#display-user-name")) $("#display-user-name").textContent = name;
+      if ($("#avatar-initial")) $("#avatar-initial").textContent = name.charAt(0).toUpperCase();
 
       const isSuperAdmin = user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 
-      // Ensure profile exists in Firestore `lecturers/{uid}`
+      // Provide immediate fallback profile so onboarding UI transitions right away
+      if (!currentLecturerProfile || currentLecturerProfile.uid !== user.uid) {
+        currentLecturerProfile = {
+          uid: user.uid,
+          email: user.email,
+          displayName: name,
+          status: isSuperAdmin ? "verified" : "pending",
+          applied: isSuperAdmin
+        };
+      }
+      syncLecturerOnboardingUI();
+
+      // Sync profile with Firestore `lecturers/{uid}`
       await syncLecturerProfile(user, isSuperAdmin);
 
       if (isSuperAdmin) {
-        $("#admin-nav-section").style.display = "block";
-        $("#display-user-role").textContent = "👑 Super Admin";
-        $("#mobile-role-pill").textContent = "👑 Admin";
-        $("#mobile-role-pill").className = "badge badge-admin";
+        if ($("#admin-nav-section")) $("#admin-nav-section").style.display = "block";
+        if ($("#display-user-role")) $("#display-user-role").textContent = "👑 Super Admin";
+        if ($("#mobile-role-pill")) {
+          $("#mobile-role-pill").textContent = "👑 Admin";
+          $("#mobile-role-pill").className = "badge badge-admin";
+        }
         loadAdminData();
       } else {
-        $("#admin-nav-section").style.display = "none";
+        if ($("#admin-nav-section")) $("#admin-nav-section").style.display = "none";
         const status = currentLecturerProfile?.status || "pending";
-        $("#display-user-role").textContent = status === "verified" ? "Verified Educator" : "Pending Verification";
-        $("#mobile-role-pill").textContent = status === "verified" ? "Verified" : "Pending";
-        $("#mobile-role-pill").className = status === "verified" ? "badge badge-success" : "badge badge-accent";
+        if ($("#display-user-role")) {
+          $("#display-user-role").textContent = status === "verified" ? "Verified Educator" : "Pending Verification";
+        }
+        if ($("#mobile-role-pill")) {
+          $("#mobile-role-pill").textContent = status === "verified" ? "Verified" : "Pending";
+          $("#mobile-role-pill").className = status === "verified" ? "badge badge-success" : "badge badge-accent";
+        }
       }
     } else {
       currentLecturerProfile = null;
-      $("#logged-out-view").style.display = "block";
-      $("#logged-in-view").style.display = "none";
-      $("#admin-nav-section").style.display = "none";
-      $("#mobile-role-pill").textContent = "Guest";
-      $("#mobile-role-pill").className = "badge badge-primary";
+      if ($("#logged-out-view")) $("#logged-out-view").style.display = "block";
+      if ($("#logged-in-view")) $("#logged-in-view").style.display = "none";
+      if ($("#admin-nav-section")) $("#admin-nav-section").style.display = "none";
+      if ($("#mobile-role-pill")) {
+        $("#mobile-role-pill").textContent = "Guest";
+        $("#mobile-role-pill").className = "badge badge-primary";
+      }
     }
 
     syncLecturerOnboardingUI();
@@ -877,8 +1022,9 @@ async function syncLecturerProfile(user, isSuperAdmin) {
       currentLecturerProfile = snap.data();
       // If Super Admin, guarantee verified status
       if (isSuperAdmin && currentLecturerProfile.status !== "verified") {
-        await setDoc(profRef, { status: "verified", role: "super_admin" }, { merge: true });
+        await setDoc(profRef, { status: "verified", role: "super_admin", applied: true }, { merge: true });
         currentLecturerProfile.status = "verified";
+        currentLecturerProfile.applied = true;
       }
     } else {
       currentLecturerProfile = {
@@ -886,6 +1032,7 @@ async function syncLecturerProfile(user, isSuperAdmin) {
         email: user.email,
         displayName: user.displayName || user.email.split("@")[0],
         status: isSuperAdmin ? "verified" : "pending",
+        applied: isSuperAdmin ? true : false,
         role: isSuperAdmin ? "super_admin" : "educator",
         institution: "General",
         registeredAt: serverTimestamp()
@@ -1269,13 +1416,13 @@ window.editCourse = function (docId) {
     $("#course-tier").dispatchEvent(new Event("change"));
   }
 
-  $("#course-code").value = found.code || "";
-  $("#course-title").value = found.title || "";
-  $("#course-dept").value = found.department || "";
-  $("#course-level").value = found.level || "";
-  $("#course-period").value = found.period || found.semester || "";
-  $("#course-session").value = found.academicSession || "2025/2026";
-  $("#course-price").value = "₦1,000";
+  if ($("#course-code")) $("#course-code").value = found.code || "";
+  if ($("#course-title")) $("#course-title").value = found.title || "";
+  if ($("#course-dept")) $("#course-dept").value = found.department || "";
+  if ($("#course-level")) $("#course-level").value = found.level || "";
+  if ($("#course-period")) $("#course-period").value = found.period || found.semester || "";
+  if ($("#course-session")) $("#course-session").value = found.academicSession || "2025/2026";
+  if ($("#course-price")) $("#course-price").value = "₦1,000";
 
   // Pre-load existing questions into editor so author can view, edit, or delete questions
   if (found.questions && Array.isArray(found.questions) && found.questions.length > 0) {
@@ -2300,25 +2447,37 @@ async function loadAdminData() {
 async function loadAdminVettingQueue() {
   try {
     const snap = await getDocs(collection(db, "lecturers"));
-    allLecturers = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+    allLecturers = snap.docs
+      .map((d) => ({ uid: d.id, ...d.data() }))
+      .filter((l) => l.email && l.email.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase());
+
+    // Sort: applied pending first, then newest
+    allLecturers.sort((a, b) => {
+      const aPend = (a.status || "pending") === "pending" && a.applied ? 1 : 0;
+      const bPend = (b.status || "pending") === "pending" && b.applied ? 1 : 0;
+      if (bPend !== aPend) return bPend - aPend;
+      const ta = a.appliedAt?.seconds || a.registeredAt?.seconds || 0;
+      const tb = b.appliedAt?.seconds || b.registeredAt?.seconds || 0;
+      return tb - ta;
+    });
 
     // Count pending
     const pendingCount = allLecturers.filter((l) => (l.status || "pending") === "pending").length;
     const verifiedCount = allLecturers.filter((l) => l.status === "verified").length;
 
-    $("#admin-pending-badge").textContent = pendingCount;
-    $("#admin-stat-pending").textContent = pendingCount;
-    $("#admin-stat-verified").textContent = verifiedCount;
+    if ($("#admin-pending-badge")) $("#admin-pending-badge").textContent = pendingCount;
+    if ($("#admin-stat-pending")) $("#admin-stat-pending").textContent = pendingCount;
+    if ($("#admin-stat-verified")) $("#admin-stat-verified").textContent = verifiedCount;
 
     // School requests count
     try {
       const schSnap = await getDocs(collection(db, "institution_requests"));
-      $("#admin-stat-schools").textContent = schSnap.docs.length;
+      if ($("#admin-stat-schools")) $("#admin-stat-schools").textContent = schSnap.docs.length;
     } catch (_) {}
 
     // Pending courses count
     const pendingCourses = currentCourses.filter((c) => !c.published || c.vettingStatus === "pending");
-    $("#admin-stat-packs").textContent = pendingCourses.length;
+    if ($("#admin-stat-packs")) $("#admin-stat-packs").textContent = pendingCourses.length;
 
     renderAdminVettingQueue();
   } catch (err) {
@@ -2343,13 +2502,13 @@ function renderAdminVettingQueue() {
     tableBody.innerHTML = `
       <tr>
         <td colspan="7" style="text-align: center; color: var(--muted); padding: 30px;">
-          No educators found for filter "${activeVettingFilter}".
+          No lecturer applications found for filter "${activeVettingFilter}".
         </td>
       </tr>
     `;
     mobileFeed.innerHTML = `
       <div style="text-align: center; color: var(--muted); padding: 24px;">
-        No educators found for filter "${activeVettingFilter}".
+        No lecturer applications found for filter "${activeVettingFilter}".
       </div>
     `;
     return;
@@ -2358,10 +2517,13 @@ function renderAdminVettingQueue() {
   tableBody.innerHTML = filtered
     .map((l) => {
       const statusBadge = l.status === "verified"
-        ? `<span class="badge badge-success">✓ Verified</span>`
+        ? `<span class="badge badge-success">✓ Approved</span>`
         : l.status === "rejected"
-        ? `<span class="badge badge-danger">✕ Rejected</span>`
-        : `<span class="badge badge-accent">⏳ Pending</span>`;
+        ? `<span class="badge badge-danger">✕ Declined</span>`
+        : `<span class="badge badge-accent">⏳ Pending Approval</span>`;
+
+      const safeEmail = l.email || "No email";
+      const safeName = l.displayName || safeEmail.split("@")[0];
 
       // Find courses authored by this educator
       const authored = currentCourses.filter((c) => c.authorEmail === l.email || c.currentCuratorEmail === l.email);
@@ -2371,26 +2533,26 @@ function renderAdminVettingQueue() {
       return `
         <tr>
           <td>
-            <b>${l.displayName || l.email.split("@")[0]}</b>
-            <div style="font-size: 12px; color: var(--muted);">${l.email}</div>
-            ${l.phone ? `<div style="font-size: 11px; color: var(--primary);">📞 ${l.phone}</div>` : ""}
+            <b>${safeName}</b>
+            <div style="font-size: 12px; color: var(--muted);">${safeEmail}</div>
+            ${l.phone ? `<div style="font-size: 12px; font-weight: 700; color: var(--primary); margin-top: 2px;">📞 ${l.phone}</div>` : `<div style="font-size: 11px; color: var(--muted);">No phone provided</div>`}
           </td>
           <td>
-            <div>${l.institution || "General"}</div>
+            <div style="font-weight: 600;">${l.institution || "Not Selected"}</div>
             <div style="font-size: 11.5px; color: var(--muted);">${l.tier || "Tertiary"}</div>
           </td>
           <td>
-            <div>${l.department || "General"}</div>
+            <div style="font-weight: 600;">${l.department || "Not Selected"}</div>
             ${l.coursesTaught ? `<div style="font-size: 11.5px; color: var(--success);">Courses: ${l.coursesTaught}</div>` : ""}
           </td>
           <td><b>${qCount}</b> Qs (${authored.length} packs)</td>
           <td>${statusBadge}</td>
-          <td style="font-size: 12px; color: var(--muted);">${l.registeredAt ? "Active" : "Recent"}</td>
+          <td style="font-size: 12px; color: var(--muted);">${l.applied ? "Application Submitted" : "Signed Up"}</td>
           <td>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               ${l.status !== "verified" ? `<button class="btn btn-success btn-sm" onclick="approveEducator('${l.uid}')">✓ Approve</button>` : ""}
-              ${l.status !== "rejected" ? `<button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" onclick="rejectEducator('${l.uid}')">✕ Reject</button>` : ""}
-              ${authored.length > 0 ? `<button class="btn btn-outline btn-sm" onclick="previewEducatorCourses('${l.email}')">👁 View Qs</button>` : ""}
+              ${l.status !== "rejected" ? `<button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger);" onclick="rejectEducator('${l.uid}')">✕ Decline</button>` : ""}
+              ${authored.length > 0 ? `<button class="btn btn-outline btn-sm" onclick="previewEducatorCourses('${safeEmail}')">👁 View Qs</button>` : ""}
             </div>
           </td>
         </tr>
@@ -2401,10 +2563,13 @@ function renderAdminVettingQueue() {
   mobileFeed.innerHTML = filtered
     .map((l) => {
       const statusBadge = l.status === "verified"
-        ? `<span class="badge badge-success">✓ Verified</span>`
+        ? `<span class="badge badge-success">✓ Approved</span>`
         : l.status === "rejected"
-        ? `<span class="badge badge-danger">✕ Rejected</span>`
-        : `<span class="badge badge-accent">⏳ Pending</span>`;
+        ? `<span class="badge badge-danger">✕ Declined</span>`
+        : `<span class="badge badge-accent">⏳ Pending Approval</span>`;
+
+      const safeEmail = l.email || "No email";
+      const safeName = l.displayName || safeEmail.split("@")[0];
 
       const authored = currentCourses.filter((c) => c.authorEmail === l.email || c.currentCuratorEmail === l.email);
       let qCount = 0;
@@ -2414,23 +2579,23 @@ function renderAdminVettingQueue() {
         <div class="feed-card">
           <div class="feed-card-header">
             <div>
-              <div style="font-size: 15px; font-weight: 700;">${l.displayName || l.email.split("@")[0]}</div>
-              <div style="font-size: 12px; color: var(--muted);">${l.email}</div>
+              <div style="font-size: 15px; font-weight: 700;">${safeName}</div>
+              <div style="font-size: 12px; color: var(--muted);">${safeEmail}</div>
             </div>
             ${statusBadge}
           </div>
           <div class="feed-card-body">
-            <div><b>School / Tier:</b> ${l.institution || "General"} · ${l.tier || "Tertiary"}</div>
-            <div><b>Department:</b> ${l.department || "General"}</div>
+            <div><b>Institution:</b> ${l.institution || "Not Selected"}</div>
+            <div><b>Department:</b> ${l.department || "Not Selected"}</div>
+            <div><b>Phone Number:</b> <span style="color: var(--primary); font-weight: 700;">${l.phone || "Not provided"}</span></div>
             ${l.coursesTaught ? `<div><b>Courses Coordinated:</b> ${l.coursesTaught}</div>` : ""}
-            ${l.phone ? `<div><b>Phone:</b> ${l.phone}</div>` : ""}
             <div><b>Questions Uploaded:</b> ${qCount} questions across ${authored.length} packs</div>
           </div>
           <div class="feed-card-footer">
             <div style="display: flex; gap: 6px; width: 100%; flex-wrap: wrap;">
               ${l.status !== "verified" ? `<button class="btn btn-success btn-sm" style="flex: 1;" onclick="approveEducator('${l.uid}')">✓ Approve</button>` : ""}
-              ${l.status !== "rejected" ? `<button class="btn btn-outline btn-sm" style="flex: 1; color: var(--danger); border-color: var(--danger);" onclick="rejectEducator('${l.uid}')">✕ Reject</button>` : ""}
-              ${authored.length > 0 ? `<button class="btn btn-outline btn-sm" style="flex: 1;" onclick="previewEducatorCourses('${l.email}')">👁 View Qs</button>` : ""}
+              ${l.status !== "rejected" ? `<button class="btn btn-outline btn-sm" style="flex: 1; color: var(--danger); border-color: var(--danger);" onclick="rejectEducator('${l.uid}')">✕ Decline</button>` : ""}
+              ${authored.length > 0 ? `<button class="btn btn-outline btn-sm" style="flex: 1;" onclick="previewEducatorCourses('${safeEmail}')">👁 View Qs</button>` : ""}
             </div>
           </div>
         </div>
@@ -2441,7 +2606,7 @@ function renderAdminVettingQueue() {
 
 // Window globals for admin actions
 window.approveEducator = async function (uid) {
-  if (!confirm("Approve and verify this educator? All their uploaded question packs will immediately be pushed live to student mobile devices.")) return;
+  if (!confirm("Approve this lecturer application? Once approved, signing in will open their full Lecturer Dashboard to upload and manage question banks.")) return;
 
   try {
     await setDoc(doc(db, "lecturers", uid), { status: "verified", applied: true }, { merge: true });
@@ -2455,7 +2620,7 @@ window.approveEducator = async function (uid) {
       }
     }
 
-    alert("✓ Educator approved! Their question packs are now live on student mobile devices.");
+    alert("✓ Lecturer approved! Their dashboard for uploading question banks is now unlocked.");
     loadAdminData();
     loadCoursesFromFirestore();
   } catch (err) {
@@ -2464,14 +2629,14 @@ window.approveEducator = async function (uid) {
 };
 
 window.rejectEducator = async function (uid) {
-  if (!confirm("Reject this educator application?")) return;
+  if (!confirm("Decline this lecturer application?")) return;
 
   try {
     await setDoc(doc(db, "lecturers", uid), { status: "rejected" }, { merge: true });
-    alert("Educator application marked as rejected.");
+    alert("Lecturer application marked as declined.");
     loadAdminData();
   } catch (err) {
-    alert("Rejection error: " + err.message);
+    alert("Decline error: " + err.message);
   }
 };
 
@@ -3324,13 +3489,23 @@ function exportVouchersToCsv(list, filename) {
 // INITIALIZATION
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
-  initNavigation();
-  initTierControls();
-  initAuth();
-  initParser();
-  initAIGenerator();
-  initHandover();
-  initSimulatorAndBank();
-  initShareDeptListeners();
-  initVoucherEngine();
+  const safeInit = (fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error("Init error in", fn.name, err);
+    }
+  };
+  safeInit(initNavigation);
+  safeInit(initAuth);
+  safeInit(initTierControls);
+  safeInit(initParser);
+  safeInit(initAIGenerator);
+  safeInit(initHandover);
+  safeInit(initSimulatorAndBank);
+  safeInit(initShareDeptListeners);
+  safeInit(initVoucherEngine);
+  $("#btn-admin-refresh-vetting")?.addEventListener("click", () => loadAdminVettingQueue());
+  $("#btn-refresh-courses")?.addEventListener("click", () => loadCoursesFromFirestore());
+  $("#btn-refresh-analytics")?.addEventListener("click", () => loadAdminAnalytics());
 });

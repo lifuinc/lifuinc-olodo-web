@@ -6,7 +6,7 @@
   <title>Olodo · Active Recall Study & Educator Platform</title>
   <meta name="theme-color" content="#050916">
   <link rel="icon" type="image/png" href="assets/logo.png">
-  <link rel="stylesheet" href="css/styles.css?v=20261109v5">
+  <link rel="stylesheet" href="css/styles.css?v=20261109v6">
   <style>
     body.landing-mode,
     body.onboarding-mode {
@@ -234,9 +234,9 @@
             <span class="discount-pill">Step 2 of 2 · Lecturer Application</span>
             <button type="button" class="btn btn-outline btn-sm" id="btn-onboard-logout-1" style="padding: 4px 10px; min-height: 30px; font-size: 11.5px;">Sign Out</button>
           </div>
-          <div class="action-card-title" style="font-size: 21px;">Apply for Lecturer Verification</div>
+          <div class="action-card-title" style="font-size: 21px;">Lecturer Application Form</div>
           <div class="action-card-sub" style="margin-bottom: 16px;">
-            Complete your academic profile below. Once approved, your Question Bank Upload dashboard will unlock immediately.
+            Select your institution and department and provide your phone number. Once your application is approved, your dashboard to upload question banks will unlock.
           </div>
 
           <div class="form-group">
@@ -244,49 +244,66 @@
             <input type="text" id="apply-full-name" placeholder="e.g. Dr. Olusegun Adeleke">
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-            <div class="form-group">
-              <label>Institution / School</label>
-              <input type="text" id="apply-institution" placeholder="e.g. UNILAG / NOUN">
-            </div>
-            <div class="form-group">
-              <label>Faculty / Department</label>
-              <input type="text" id="apply-department" placeholder="e.g. Computer Science">
-            </div>
+          <div class="form-group">
+            <label>Select Institution</label>
+            <select id="apply-institution">
+              <option value="" disabled selected>Select your institution...</option>
+              <option value="National Open University of Nigeria (NOUN)">National Open University of Nigeria (NOUN)</option>
+              <option value="University of Lagos (UNILAG)">University of Lagos (UNILAG)</option>
+              <option value="Obafemi Awolowo University (OAU)">Obafemi Awolowo University (OAU)</option>
+              <option value="University of Ibadan (UI)">University of Ibadan (UI)</option>
+              <option value="Ahmadu Bello University (ABU)">Ahmadu Bello University (ABU)</option>
+              <option value="Federal University of Technology Akure (FUTA)">Federal University of Technology Akure (FUTA)</option>
+              <option value="University of Nigeria Nsukka (UNN)">University of Nigeria Nsukka (UNN)</option>
+              <option value="Yaba College of Technology (YABATECH)">Yaba College of Technology (YABATECH)</option>
+              <option value="Lagos State University (LASU)">Lagos State University (LASU)</option>
+              <option value="JAMB / UTME National Registry">JAMB / UTME National Registry</option>
+              <option value="WAEC / SSCE National Registry">WAEC / SSCE National Registry</option>
+              <option value="NECO National Registry">NECO National Registry</option>
+              <option value="__OTHER__">➕ Other Institution (Specify below)</option>
+            </select>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-            <div class="form-group">
-              <label>Courses You Coordinate</label>
-              <input type="text" id="apply-courses" placeholder="e.g. GST 204, CIT 202">
-            </div>
-            <div class="form-group">
-              <label>Phone / WhatsApp Number</label>
-              <input type="tel" id="apply-phone" placeholder="e.g. 0803 000 0000">
-            </div>
+          <div class="form-group" id="apply-custom-inst-group" style="display: none;">
+            <label>Enter Your Institution Name</label>
+            <input type="text" id="apply-custom-institution" placeholder="e.g. University of Benin (UNIBEN)">
           </div>
+
+          <div class="form-group">
+            <label>Select Department</label>
+            <select id="apply-department">
+              <option value="" disabled selected>Select your department...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Phone / WhatsApp Number</label>
+            <input type="tel" id="apply-phone" placeholder="e.g. 0803 000 0000">
+          </div>
+
+          <div id="apply-form-error" style="color: var(--danger); font-size: 12.5px; margin-bottom: 10px; display: none;"></div>
 
           <button type="button" class="action-card-cta" id="btn-submit-lecturer-app" style="cursor: pointer; margin-top: 6px;">
-            <span>Submit Application for Approval</span>
+            <span>Submit Application</span>
             <span>→</span>
           </button>
         </div>
 
-        <!-- STEP 2B: APPLICATION PENDING APPROVAL (Shown after applying, before admin approval) -->
+        <!-- STEP 2B: APPLICATION SUBMITTED / PENDING APPROVAL (Shown after applying, before admin approval) -->
         <div id="onboard-pending-card" style="display: none; text-align: center; padding: 10px 0;">
-          <div style="width: 58px; height: 58px; border-radius: 50%; background: rgba(255, 184, 0, 0.14); color: #FFB800; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 14px;">
-            ⏳
+          <div id="pending-status-icon" style="width: 58px; height: 58px; border-radius: 50%; background: rgba(0, 232, 157, 0.14); color: #00E89D; border: 1px solid rgba(0, 232, 157, 0.35); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; margin: 0 auto 14px;">
+            ✓
           </div>
-          <div class="action-card-title" style="font-size: 21px;" id="pending-status-title">Application Pending Approval</div>
+          <div class="action-card-title" style="font-size: 21px;" id="pending-status-title">Application Submitted Successfully</div>
           <div class="action-card-sub" style="margin-bottom: 18px;" id="pending-status-desc">
-            Your lecturer application has been received. Your dashboard to upload and manage question banks will unlock as soon as your profile is approved.
+            Thank you for applying! Your application has been sent to our admin team and <b>you will be contacted by us</b>. Once approved, signing in will open your dashboard to upload and manage question banks.
           </div>
 
-          <div style="background: rgba(5, 9, 22, 0.65); border: 1px solid #1A2847; border-radius: 14px; padding: 14px 16px; text-align: left; font-size: 13px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--muted);">Name:</span> <b id="pend-name">-</b></div>
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--muted);">Institution:</span> <b id="pend-inst">-</b></div>
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--muted);">Department:</span> <b id="pend-dept">-</b></div>
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--muted);">Courses:</span> <b id="pend-courses" style="color: var(--primary);">-</b></div>
+          <div style="background: rgba(5, 9, 22, 0.65); border: 1px solid #1A2847; border-radius: 14px; padding: 14px 16px; text-align: left; font-size: 13px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; gap: 10px;"><span style="color: var(--muted);">Applicant:</span> <b id="pend-name" style="text-align: right;">-</b></div>
+            <div style="display: flex; justify-content: space-between; gap: 10px;"><span style="color: var(--muted);">Institution:</span> <b id="pend-inst" style="text-align: right;">-</b></div>
+            <div style="display: flex; justify-content: space-between; gap: 10px;"><span style="color: var(--muted);">Department:</span> <b id="pend-dept" style="text-align: right;">-</b></div>
+            <div style="display: flex; justify-content: space-between; gap: 10px;"><span style="color: var(--muted);">Phone Number:</span> <b id="pend-phone" style="color: #00E89D; text-align: right;">-</b></div>
           </div>
 
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -1524,6 +1541,6 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script type="module" src="js/app.js?v=20261109v5"></script>
+  <script type="module" src="js/app.js?v=20261109v6"></script>
 </body>
 </html>
