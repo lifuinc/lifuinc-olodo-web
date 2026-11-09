@@ -297,6 +297,7 @@ function initNavigation() {
       activeTierFilter = chip.getAttribute("data-filter");
       renderCourses();
     updateCourseAvailabilityUI();
+    syncCourseCatalogues(currentCourses);
     });
   });
 
@@ -693,6 +694,98 @@ function renderVettingStatusBanner() {
 // ==========================================
 // 4. QUESTION BANKS RETRIEVAL & RENDERING
 // ==========================================
+function buildCohortKey(institution, level, semester) {
+  const cleanInst = String(institution || "general")
+    .split("(")[0]
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const cleanLevel = String(level || "100level")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const cleanSem = String(semester || "1stsemester")
+    .toLowerCase()
+    .replace(/first/g, "1st")
+    .replace(/second/g, "2nd")
+    .replace(/third/g, "3rd")
+    .replace(/[^a-z0-9]/g, "");
+  return `${cleanInst}_${cleanLevel}_${cleanSem}`;
+}
+
+// Syncs lightweight metadata-only catalogue documents (zero questions) in Firestore
+// so students sharing the same Institution + Level + Semester fetch 1 tiny shared index
+// instead of downloading full question banks before clicking Download.
+async function syncCourseCatalogues(coursesList) {
+  if (!currentUser || !Array.isArray(coursesList) || coursesList.length === 0) return;
+  try {
+    const publishedList = coursesList.filter((c) => {
+      const status = String(c.vettingStatus || "verified").toLowerCase().trim();
+      return c.published !== false && status !== "rejected" && status !== "pending";
+    });
+
+    const masterItems = [];
+    const cohortMap = {};
+
+    for (const c of publishedList) {
+      const trueId = c.docId || c.id;
+      if (!trueId) continue;
+      const meta = {
+        id: trueId,
+        docId: trueId,
+        code: c.code || "COURSE",
+        title: c.title || "Course Title",
+        tier: c.tier || "tertiary",
+        institution: c.institution || "General",
+        department: c.department || "General",
+        departments:
+          Array.isArray(c.departments) && c.departments.length > 0
+            ? c.departments
+            : [c.department || "General"],
+        level: c.level || "100 Level",
+        semester: c.semester || c.period || "1st Semester",
+        period: c.period || c.semester || "1st Semester",
+        totalQuestions:
+          Number(c.totalQuestions) || (Array.isArray(c.questions) ? c.questions.length : 0),
+        singleCoursePrice: Number(c.singleCoursePrice) || 1000,
+        academicSession: c.academicSession || "2025/2026",
+        currentCuratorEmail: c.currentCuratorEmail || "",
+        version: Number(c.version) || 1,
+        hasExplanations: !!c.hasExplanations,
+        published: true,
+        vettingStatus: "verified"
+      };
+
+      masterItems.push(meta);
+      const cKey = buildCohortKey(meta.institution, meta.level, meta.semester);
+      if (!cohortMap[cKey]) cohortMap[cKey] = [];
+      cohortMap[cKey].push(meta);
+    }
+
+    const writes = [
+      setDoc(doc(db, "course_catalogues", "master_catalogue"), {
+        courses: masterItems,
+        totalCourses: masterItems.length,
+        updatedAt: serverTimestamp()
+      })
+    ];
+
+    for (const [cKey, list] of Object.entries(cohortMap)) {
+      writes.push(
+        setDoc(doc(db, "course_catalogues", cKey), {
+          cohortKey: cKey,
+          courses: list,
+          totalCourses: list.length,
+          updatedAt: serverTimestamp()
+        })
+      );
+    }
+
+    await Promise.all(writes);
+  } catch (err) {
+    console.warn("Catalogue index sync warning:", err);
+  }
+}
+
 async function loadCoursesFromFirestore() {
   const tableBody = $("#courses-table-body");
   const overviewList = $("#overview-courses-list");
@@ -731,6 +824,7 @@ async function loadCoursesFromFirestore() {
 
     renderCourses();
     updateCourseAvailabilityUI();
+    syncCourseCatalogues(currentCourses);
 
     // Stats
     let totalQuestionsCount = 0;
@@ -1076,6 +1170,7 @@ function initShareDeptListeners() {
       activeSharingCourse.departments = [...activeSharingDepts];
       $("#share-dept-modal")?.close();
       renderCourses();
+      await syncCourseCatalogues(currentCourses);
       alert(`✓ Success! "${activeSharingCourse.code}" is now linked to ${activeSharingDepts.length} department(s) and immediately accessible to students in those departments.`);
     } catch (err) {
       alert("Error saving shared departments: " + err.message);
@@ -1311,7 +1406,8 @@ function initParser() {
     const isVerified = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified");
 
     const courseDoc = {
-      id: cleanCode,
+      id: docId,
+      docId: docId,
       code,
       title,
       tier,
