@@ -37,9 +37,11 @@ exports.paystackWebhook = onRequest(
       return res.status(405).send("Method Not Allowed");
     }
 
-    const secretKey =
-      process.env.PAYSTACK_SECRET_KEY ||
-      "sk_test_e606ff23917afc349b1d20c9ef4f6be7469b4f74";
+    const secretKey = (process.env.PAYSTACK_SECRET_KEY || "").trim();
+    if (!secretKey) {
+      console.error("Webhook error: Missing PAYSTACK_SECRET_KEY env var");
+      return res.status(500).send("Server configuration error");
+    }
 
     const signature = req.headers["x-paystack-signature"];
     if (!signature) {

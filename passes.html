@@ -44,16 +44,41 @@
       min-height: 100vh;
     }
     .portal-container {
-      max-width: 560px;
-      margin: 28px auto;
-      padding: 0 16px;
+      width: min(94vw, 1120px);
+      margin: clamp(20px, 3vw, 38px) auto;
+      padding: 0 8px;
     }
     .portal-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 26px 24px;
-      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55);
+      border-radius: 24px;
+      padding: clamp(22px, 3vw, 34px);
+      box-shadow: 0 24px 55px rgba(0, 0, 0, 0.55);
+    }
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 900px) {
+      .checkout-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 28px;
+        align-items: start;
+      }
+      .checkout-right-col {
+        position: sticky;
+        top: 24px;
+        background: rgba(5, 9, 22, 0.55);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 22px;
+      }
+    }
+    @media (max-width: 899px) {
+      .portal-container {
+        max-width: 620px;
+      }
     }
     .portal-header {
       text-align: center;
@@ -340,135 +365,143 @@
         <div class="tagline">Instant single or bulk PINs for the Olodo App</div>
       </div>
 
-      <!-- Verified Student Academic Profile (Auto-populated from app link) -->
-      <div class="academic-profile-box">
-        <div class="profile-row">
-          <span class="profile-label">Institution</span>
-          <span class="profile-value" id="disp-institution">University / Higher Institution</span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-label">Department</span>
-          <span class="profile-value" id="disp-department">General Studies</span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-label">Cohort</span>
-          <span class="profile-value" id="disp-level-sem">200 Level · 1st Semester</span>
-        </div>
-        <div class="profile-row" id="row-target-course" style="display: none;">
-          <span class="profile-label">Course</span>
-          <span class="profile-value">
-            <span class="badge-course" id="disp-course">GST 101</span>
-            <span id="disp-course-title" style="margin-left: 4px; font-weight: normal; color: var(--muted);"></span>
-          </span>
-        </div>
-        <div class="profile-row" id="row-student-id" style="display: none;">
-          <span class="profile-label">Student ID</span>
-          <span class="profile-value" id="disp-student-id"></span>
-        </div>
-      </div>
-
-      <!-- Student / Buyer Email Field -->
-      <div class="student-info-box">
-        <label for="student-email">Email Address</label>
-        <input type="email" id="student-email" placeholder="student@university.edu.ng" required autocomplete="email">
-      </div>
-
-      <!-- PLAN 1: FULL SEMESTER / TERM PASS -->
-      <div class="plan-card selected" id="plan-full" onclick="selectPlan('full')">
-        <div class="plan-header">
-          <div>
-            <div class="plan-title" id="full-pass-title">Full Semester Pass</div>
-            <span class="plan-tag tag-best">ALL COURSES · 180 DAYS</span>
+      <div class="checkout-grid">
+        <!-- LEFT COLUMN: COHORT PROFILE + EMAIL + PASS SELECTION -->
+        <div class="checkout-left-col">
+          <!-- Verified Student Academic Profile (Auto-populated from app link) -->
+          <div class="academic-profile-box">
+            <div class="profile-row">
+              <span class="profile-label">Institution</span>
+              <span class="profile-value" id="disp-institution">University / Higher Institution</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Department</span>
+              <span class="profile-value" id="disp-department">General Studies</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Cohort</span>
+              <span class="profile-value" id="disp-level-sem">200 Level · 1st Semester</span>
+            </div>
+            <div class="profile-row" id="row-target-course" style="display: none;">
+              <span class="profile-label">Course</span>
+              <span class="profile-value">
+                <span class="badge-course" id="disp-course">GST 101</span>
+                <span id="disp-course-title" style="margin-left: 4px; font-weight: normal; color: var(--muted);"></span>
+              </span>
+            </div>
+            <div class="profile-row" id="row-student-id" style="display: none;">
+              <span class="profile-label">Student ID</span>
+              <span class="profile-value" id="disp-student-id"></span>
+            </div>
           </div>
-          <div class="plan-price">₦5,000</div>
-        </div>
-        <div class="plan-desc" id="full-pass-desc">Unlocks all courses in your level & semester.</div>
-        <span id="perk-all-courses" style="display:none;"></span>
-      </div>
 
-      <!-- PLAN 2: MONTHLY ACCESS PASS (₦1,500) -->
-      <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')">
-        <div class="plan-header">
-          <div>
-            <div class="plan-title">Monthly Pass</div>
-            <span class="plan-tag" style="background: rgba(255, 184, 0, 0.15); color: #FFB800;">ALL COURSES · 30 DAYS</span>
+          <!-- Student / Buyer Email Field -->
+          <div class="student-info-box">
+            <label for="student-email">Email Address</label>
+            <input type="email" id="student-email" placeholder="student@university.edu.ng" required autocomplete="email">
           </div>
-          <div class="plan-price">₦1,500</div>
-        </div>
-        <div class="plan-desc">30-day full access to all courses in your cohort.</div>
-      </div>
 
-      <!-- PLAN 3: SINGLE SUBJECT PASS -->
-      <div class="plan-card" id="plan-single" onclick="selectPlan('single')">
-        <div class="plan-header">
-          <div>
-            <div class="plan-title" id="single-pass-title">Single Course Pass</div>
-            <span class="plan-tag tag-single">1 COURSE · 180 DAYS</span>
+          <!-- PLAN 1: FULL SEMESTER / TERM PASS -->
+          <div class="plan-card selected" id="plan-full" onclick="selectPlan('full')">
+            <div class="plan-header">
+              <div>
+                <div class="plan-title" id="full-pass-title">Full Semester Pass</div>
+                <span class="plan-tag tag-best">ALL COURSES · 180 DAYS</span>
+              </div>
+              <div class="plan-price">₦5,000</div>
+            </div>
+            <div class="plan-desc" id="full-pass-desc">Unlocks all courses in your level & semester.</div>
+            <span id="perk-all-courses" style="display:none;"></span>
           </div>
-          <div class="plan-price">₦1,000</div>
-        </div>
-        <div class="plan-desc" id="single-pass-desc">Unlocks 1 selected course for the semester.</div>
-        <span id="perk-single-course" style="display:none;"></span>
-        <div id="custom-course-code-wrap" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: none;" onclick="event.stopPropagation();">
-          <input type="text" id="custom-course-input" placeholder="Course Code (e.g. GST 101)" style="width: 100%; padding: 8px 12px; background: #050916; color: var(--text); border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 700;">
-        </div>
-      </div>
 
-      <!-- SINGLE & MULTIPLE VOUCHER QUANTITY SELECTOR (WITH 10% BULK DISCOUNT > 5) -->
-      <div style="background: rgba(5, 9, 22, 0.65); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; margin-top: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <div style="font-size: 13.5px; font-weight: 800; color: var(--text);">Number of Vouchers</div>
-          <span style="font-size: 11px; font-weight: 800; color: var(--brand-mint);">
-            6+ PINs = 10% OFF
-          </span>
-        </div>
+          <!-- PLAN 2: MONTHLY ACCESS PASS (₦1,500) -->
+          <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')">
+            <div class="plan-header">
+              <div>
+                <div class="plan-title">Monthly Pass</div>
+                <span class="plan-tag" style="background: rgba(255, 184, 0, 0.15); color: #FFB800;">ALL COURSES · 30 DAYS</span>
+              </div>
+              <div class="plan-price">₦1,500</div>
+            </div>
+            <div class="plan-desc">30-day full access to all courses in your cohort.</div>
+          </div>
 
-        <!-- Quick Quantity Preset Chips -->
-        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
-          <button type="button" class="qty-chip" onclick="setVoucherQty(1)">1</button>
-          <button type="button" class="qty-chip" onclick="setVoucherQty(5)">5</button>
-          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(6)">6 (-10%)</button>
-          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(10)">10 (-10%)</button>
-          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(20)">20 (-10%)</button>
-          <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(50)">50 (-10%)</button>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <label for="voucher-qty-input" style="font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap;">Quantity:</label>
-          <input type="number" id="voucher-qty-input" value="1" min="1" max="200" oninput="onQtyInputChanged()" style="width: 90px; padding: 7px 10px; background: #050916; border: 1.5px solid var(--brand-cyan); border-radius: 8px; font-size: 14px; font-weight: 800; color: var(--text);">
-          <div id="discount-live-banner" style="font-size: 11.5px; font-weight: 700; color: var(--muted); flex: 1;">
-            6+ PINs gets 10% off
+          <!-- PLAN 3: SINGLE SUBJECT PASS -->
+          <div class="plan-card" id="plan-single" onclick="selectPlan('single')" style="margin-bottom: 0;">
+            <div class="plan-header">
+              <div>
+                <div class="plan-title" id="single-pass-title">Single Course Pass</div>
+                <span class="plan-tag tag-single">1 COURSE · 180 DAYS</span>
+              </div>
+              <div class="plan-price">₦1,000</div>
+            </div>
+            <div class="plan-desc" id="single-pass-desc">Unlocks 1 selected course for the semester.</div>
+            <span id="perk-single-course" style="display:none;"></span>
+            <div id="custom-course-code-wrap" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: none;" onclick="event.stopPropagation();">
+              <input type="text" id="custom-course-input" placeholder="Course Code (e.g. GST 101)" style="width: 100%; padding: 8px 12px; background: #050916; color: var(--text); border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 700;">
+            </div>
           </div>
         </div>
 
-        <!-- Price Calculation Breakdown -->
-        <div id="price-breakdown-box" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 12.5px; display: flex; flex-direction: column; gap: 4px;">
-          <div style="display: flex; justify-content: space-between; color: var(--muted);">
-            <span id="calc-subtotal-label">1 × ₦5,000</span>
-            <span id="calc-subtotal-val">₦5,000</span>
+        <!-- RIGHT COLUMN: QUANTITY SELECTOR + LIVE BREAKDOWN + PAY CTA -->
+        <div class="checkout-right-col">
+          <!-- SINGLE & MULTIPLE VOUCHER QUANTITY SELECTOR (WITH 10% BULK DISCOUNT > 5) -->
+          <div style="background: rgba(5, 9, 22, 0.65); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="font-size: 14px; font-weight: 800; color: var(--text);">Number of Vouchers</div>
+              <span style="font-size: 11px; font-weight: 800; color: var(--brand-mint);">
+                6+ PINs = 10% OFF
+              </span>
+            </div>
+
+            <!-- Quick Quantity Preset Chips -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+              <button type="button" class="qty-chip" onclick="setVoucherQty(1)">1</button>
+              <button type="button" class="qty-chip" onclick="setVoucherQty(5)">5</button>
+              <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(6)">6 (-10%)</button>
+              <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(10)">10 (-10%)</button>
+              <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(20)">20 (-10%)</button>
+              <button type="button" class="qty-chip discount-chip" onclick="setVoucherQty(50)">50 (-10%)</button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label for="voucher-qty-input" style="font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap;">Quantity:</label>
+              <input type="number" id="voucher-qty-input" value="1" min="1" max="200" oninput="onQtyInputChanged()" style="width: 90px; padding: 7px 10px; background: #050916; border: 1.5px solid var(--brand-cyan); border-radius: 8px; font-size: 14px; font-weight: 800; color: var(--text);">
+              <div id="discount-live-banner" style="font-size: 11.5px; font-weight: 700; color: var(--muted); flex: 1;">
+                6+ PINs gets 10% off
+              </div>
+            </div>
+
+            <!-- Price Calculation Breakdown -->
+            <div id="price-breakdown-box" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 13px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; color: var(--muted);">
+                <span id="calc-subtotal-label">1 × ₦5,000</span>
+                <span id="calc-subtotal-val">₦5,000</span>
+              </div>
+              <div id="calc-discount-row" style="display: none; justify-content: space-between; color: var(--brand-mint); font-weight: 800;">
+                <span>10% Bulk Discount</span>
+                <span id="calc-discount-val">-₦0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; color: var(--brand-cyan); padding-top: 6px;">
+                <span>Total</span>
+                <span id="calc-total-val">₦5,000</span>
+              </div>
+            </div>
           </div>
-          <div id="calc-discount-row" style="display: none; justify-content: space-between; color: var(--brand-mint); font-weight: 800;">
-            <span>10% Bulk Discount</span>
-            <span id="calc-discount-val">-₦0</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: var(--brand-cyan); padding-top: 4px;">
-            <span>Total</span>
-            <span id="calc-total-val">₦5,000</span>
+
+          <button class="btn-pay" id="btn-pay-now" onclick="triggerPayment()">
+            <span>Pay & Generate Voucher</span>
+            <span id="btn-amount-label">· ₦5,000</span>
+          </button>
+
+          <div class="trust-footer">
+            <span>Bank Transfer</span>
+            <span>·</span>
+            <span>OPay / Palmpay</span>
+            <span>·</span>
+            <span>Card / USSD</span>
           </div>
         </div>
-      </div>
-
-      <button class="btn-pay" id="btn-pay-now" onclick="triggerPayment()">
-        <span>Pay & Generate Voucher</span>
-        <span id="btn-amount-label">· ₦5,000</span>
-      </button>
-
-      <div class="trust-footer">
-        <span>Bank Transfer</span>
-        <span>·</span>
-        <span>OPay / Palmpay</span>
-        <span>·</span>
-        <span>Card / USSD</span>
       </div>
 
     </div>
@@ -740,7 +773,7 @@
 
     const PAYSTACK_KEY = (typeof ENV !== "undefined" && ENV?.PAYSTACK_PUBLIC_KEY)
       ? ENV.PAYSTACK_PUBLIC_KEY
-      : (window.ENV?.PAYSTACK_PUBLIC_KEY || "pk_test_3a3d78b430a8f283dc8173c98876cf3a4cc2aa36");
+      : (window.ENV?.PAYSTACK_PUBLIC_KEY || "pk_live_d43615f2a43d8fafb973d4085c0ee1eb0abdf8c9");
 
     window.triggerPayment = function() {
       const email = emailInput.value.trim();
