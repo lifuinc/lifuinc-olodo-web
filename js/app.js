@@ -891,7 +891,7 @@ function initAuth() {
         department: department,
         phone: phone,
         applied: true,
-        status: currentLecturerProfile?.status === "verified" ? "verified" : "pending",
+        status: "pending",
         appliedAt: serverTimestamp()
       };
       await setDoc(profRef, updatedFields, { merge: true });
