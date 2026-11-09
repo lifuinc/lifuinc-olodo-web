@@ -308,10 +308,19 @@
   <div class="portal-container">
     <div class="portal-card" id="checkout-view">
       
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <a href="index.html" style="font-size: 13px; font-weight: 700; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+          ← Welcome Hub
+        </a>
+        <a href="index.html?view=lecturer" style="font-size: 12.5px; font-weight: 700; color: #475569; background: #F1F5F9; padding: 6px 12px; border-radius: 8px; text-decoration: none;">
+          👨‍🏫 Lecturer Portal →
+        </a>
+      </div>
+
       <div class="portal-header">
-        <div class="brand-icon">🧠</div>
-        <h1>Olodo Student Enrollment</h1>
-        <div class="tagline">“We are all olodos until we learn.”</div>
+        <div class="brand-icon">🎟️</div>
+        <h1>Student & Campus Voucher Store</h1>
+        <div class="tagline">Generate single or bulk access vouchers instantly · Automatic 10% discount above 5 vouchers!</div>
       </div>
 
       <!-- Verified Student Academic Profile (Auto-populated from app link) -->
@@ -341,11 +350,11 @@
         </div>
       </div>
 
-      <!-- Student Email Field -->
+      <!-- Student / Buyer Email Field -->
       <div class="student-info-box">
-        <label for="student-email">Student Account Email</label>
+        <label for="student-email">Student / Buyer Email Address</label>
         <input type="email" id="student-email" placeholder="student@university.edu.ng" required autocomplete="email">
-        <span class="input-hint">Your pass will instantly activate on this account in your mobile app.</span>
+        <span class="input-hint">Your voucher PIN(s) and pass activation will be linked to this email.</span>
       </div>
 
       <!-- PLAN 1: FULL SEMESTER / TERM PASS -->
@@ -353,7 +362,7 @@
         <div class="plan-header">
           <div>
             <div class="plan-title" id="full-pass-title">Full Semester Pass</div>
-            <span class="plan-tag tag-best">BEST VALUE · UNLOCKS ALL COURSES</span>
+            <span class="plan-tag tag-best">BEST VALUE · UNLOCKS ALL COURSES (180 DAYS)</span>
           </div>
           <div>
             <div class="plan-price">₦5,000</div>
@@ -364,31 +373,101 @@
           <li id="perk-all-courses">Unlocks all subjects in your academic level & semester</li>
           <li>Unlimited active recall study rounds & quiz attempts</li>
           <li>100% offline access ready on your phone</li>
-          <li>Verified answer keys, explanations & hints</li>
+          <li>Verified answer keys, explanations & diagrams</li>
         </ul>
       </div>
 
-      <!-- PLAN 2: SINGLE SUBJECT PASS -->
+      <!-- PLAN 2: MONTHLY ACCESS PASS (₦1,500) -->
+      <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')">
+        <div class="plan-header">
+          <div>
+            <div class="plan-title">Monthly Access Pass</div>
+            <span class="plan-tag" style="background: #FEF3C7; color: #92400E;">⚡ 30-DAY SPRINT · ALL COURSES</span>
+          </div>
+          <div>
+            <div class="plan-price">₦1,500</div>
+          </div>
+        </div>
+        <div class="plan-desc">Unlocks ALL courses in your level & semester for 30 days.</div>
+        <ul class="plan-perks">
+          <li>Full access to all courses in your level & semester for 30 days</li>
+          <li>Ideal for exam revision & test preparation month</li>
+          <li>100% offline drills, explanations & CBT simulator</li>
+        </ul>
+      </div>
+
+      <!-- PLAN 3: SINGLE SUBJECT PASS -->
       <div class="plan-card" id="plan-single" onclick="selectPlan('single')">
         <div class="plan-header">
           <div>
-            <div class="plan-title" id="single-pass-title">Single Subject Pass</div>
-            <span class="plan-tag tag-single">TARGETED PREP</span>
+            <div class="plan-title" id="single-pass-title">Single Subject / Course Pass</div>
+            <span class="plan-tag tag-single">TARGETED PREP · 1 COURSE</span>
           </div>
           <div>
             <div class="plan-price">₦1,000</div>
           </div>
         </div>
-        <div class="plan-desc" id="single-pass-desc">Unlocks your selected course for 180 days.</div>
+        <div class="plan-desc" id="single-pass-desc">Unlocks 1 selected course for 180 days.</div>
         <ul class="plan-perks">
-          <li id="perk-single-course">Unlimited study & quiz attempts for this course</li>
+          <li id="perk-single-course">Unlimited study & quiz attempts for 1 course</li>
           <li>100% offline access ready on your phone</li>
           <li>Verified answer keys and explanations</li>
         </ul>
+        <div id="custom-course-code-wrap" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: none;" onclick="event.stopPropagation();">
+          <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Target Course Code (Optional)</label>
+          <input type="text" id="custom-course-input" placeholder="e.g. GST 101 or MTH 101 (or leave blank for any 1 course)" style="width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 700;">
+        </div>
+      </div>
+
+      <!-- SINGLE & MULTIPLE VOUCHER QUANTITY SELECTOR (WITH 10% BULK DISCOUNT > 5) -->
+      <div style="background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+          <div>
+            <div style="font-size: 14px; font-weight: 800; color: var(--text);">🎟️ Number of Vouchers to Generate</div>
+            <div style="font-size: 12px; color: var(--muted);">Buy for yourself (1 PIN) or generate multiple PINs for classmates</div>
+          </div>
+          <span style="background: #DCFCE7; color: #166534; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px;">
+            🔥 10% OFF above 5 PINs!
+          </span>
+        </div>
+
+        <!-- Quick Quantity Preset Chips -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+          <button type="button" class="qty-chip" onclick="setVoucherQty(1)" style="padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">1 PIN</button>
+          <button type="button" class="qty-chip" onclick="setVoucherQty(5)" style="padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">5 PINs</button>
+          <button type="button" class="qty-chip" onclick="setVoucherQty(6)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">6 PINs (-10%)</button>
+          <button type="button" class="qty-chip" onclick="setVoucherQty(10)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">10 PINs (-10%)</button>
+          <button type="button" class="qty-chip" onclick="setVoucherQty(20)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">20 PINs (-10%)</button>
+          <button type="button" class="qty-chip" onclick="setVoucherQty(50)" style="padding: 6px 11px; border-radius: 8px; border: 1.5px solid #10B981; background: #ECFDF5; color: #065F46; font-size: 12px; font-weight: 800; cursor: pointer;">50 PINs (-10%)</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label for="voucher-qty-input" style="font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap;">Custom Quantity:</label>
+          <input type="number" id="voucher-qty-input" value="1" min="1" max="200" oninput="onQtyInputChanged()" style="width: 110px; padding: 8px 12px; border: 1.5px solid var(--primary); border-radius: 8px; font-size: 15px; font-weight: 800; color: var(--text);">
+          <div id="discount-live-banner" style="font-size: 12px; font-weight: 700; color: var(--muted); flex: 1;">
+            💡 Buy 6+ vouchers to get an automatic <b>10% discount</b>!
+          </div>
+        </div>
+
+        <!-- Price Calculation Breakdown -->
+        <div id="price-breakdown-box" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 13px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; color: var(--muted);">
+            <span id="calc-subtotal-label">1 × ₦5,000</span>
+            <span id="calc-subtotal-val">₦5,000</span>
+          </div>
+          <div id="calc-discount-row" style="display: none; justify-content: space-between; color: #059669; font-weight: 800;">
+            <span>🎉 Bulk Voucher Discount (10% OFF):</span>
+            <span id="calc-discount-val">-₦0</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: var(--primary); padding-top: 4px;">
+            <span>Total Payable:</span>
+            <span id="calc-total-val">₦5,000</span>
+          </div>
+        </div>
       </div>
 
       <button class="btn-pay" id="btn-pay-now" onclick="triggerPayment()">
-        <span>🔒 Pay with Paystack</span>
+        <span>🔒 Pay & Generate Voucher(s)</span>
         <span id="btn-amount-label">· ₦5,000</span>
       </button>
 
@@ -405,30 +484,38 @@
     <!-- SUCCESS CONFIRMATION VIEW -->
     <div class="portal-card success-card" id="success-view">
       <div class="success-icon">✓</div>
-      <h1 style="color: var(--success); margin-bottom: 8px;">Pass Activated Successfully!</h1>
+      <h1 style="color: var(--success); margin-bottom: 8px;" id="success-heading">Voucher(s) Generated & Active!</h1>
       <p style="color: var(--text); font-size: 15px; margin-bottom: 14px;" id="success-detail">
-        Your institutional access is now live on your account.
+        Your institutional access voucher(s) are now live and ready for redemption.
       </p>
       
       <div class="meta-receipt">
         <div><strong>Transaction Reference:</strong> <span id="success-ref"></span></div>
-        <div><strong>Activated Email:</strong> <span id="success-email"></span></div>
-        <div><strong>Pass Type:</strong> <span id="success-plan"></span></div>
+        <div><strong>Buyer Email:</strong> <span id="success-email"></span></div>
+        <div><strong>Pass Type & Quantity:</strong> <span id="success-plan"></span></div>
       </div>
 
-      <!-- Self-Service Generated Voucher PIN Box -->
+      <!-- Self-Service Generated Voucher PIN(s) Box -->
       <div style="background: #EFF6FF; border: 2px solid #1E3A8A; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
-        <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #1E3A8A; margin-bottom: 6px;">
-          🎟️ Your Instant Activation Voucher PIN
+        <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #1E3A8A; margin-bottom: 8px;" id="success-pins-label">
+          🎟️ Your Instant Activation Voucher PIN(s)
         </div>
-        <div id="success-voucher-pin" style="font-family: monospace; font-size: 22px; font-weight: 900; color: #0F172A; letter-spacing: 0.06em; background: #FFFFFF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; user-select: all;">
+        <div id="success-voucher-pin" style="font-family: monospace; font-size: 19px; font-weight: 900; color: #0F172A; letter-spacing: 0.05em; background: #FFFFFF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; user-select: all;">
           OLODO-XXXX-XXXX
         </div>
-        <button type="button" id="btn-copy-self-pin" onclick="copyGeneratedPin()" style="background: #1E3A8A; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
-          📋 Copy Voucher PIN
-        </button>
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" id="btn-copy-self-pin" onclick="copyGeneratedPin()" style="background: #1E3A8A; color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
+            📋 Copy All PIN(s)
+          </button>
+          <button type="button" onclick="sharePinsWhatsApp()" style="background: #10B981; color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
+            💬 Copy for WhatsApp
+          </button>
+          <button type="button" onclick="downloadPinsCsv()" style="background: #fff; color: #1E3A8A; border: 1.5px solid #1E3A8A; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer;">
+            📥 Download CSV
+          </button>
+        </div>
         <div style="font-size: 11.5px; color: #475569; margin-top: 8px; line-height: 1.4;">
-          Save or copy this PIN! You can paste it anytime inside the Olodo App under <b>Unlock Access → Institutional Code</b>.
+          Save or copy your PIN(s)! Redeem anytime inside the Olodo App under <b>Unlock Access → Institutional Code</b>.
         </div>
       </div>
 
@@ -442,6 +529,7 @@
     </div>
 
     <div style="text-align: center; margin-top: 24px; font-size: 12px; color: var(--muted);">
+      <a href="index.html" style="color: var(--primary); font-weight: 700; text-decoration: none;">Welcome Hub</a> ·
       <a href="privacy.html" style="color: var(--muted);">Privacy Policy</a> · 
       <span>Olodo Learning Platform © 2026 Lifu Inc</span>
     </div>
@@ -459,6 +547,8 @@
     const paramCourseTitle = (params.get("courseTitle") || "").trim();
     const paramLevel = (params.get("level") || "200 Level").trim();
     const paramSemester = (params.get("semester") || params.get("period") || "1st Semester").trim();
+    const paramPlan = (params.get("plan") || "").trim().toLowerCase();
+    const paramQty = parseInt(params.get("qty") || "1", 10);
 
     // 2. Pre-fill student email input
     const emailInput = document.getElementById("student-email");
@@ -482,6 +572,8 @@
       document.getElementById("single-pass-title").textContent = `${paramCourse.toUpperCase()} Course Pass`;
       document.getElementById("single-pass-desc").textContent = `Unlocks ${paramCourse.toUpperCase()} question bank for 180 days.`;
       document.getElementById("perk-single-course").textContent = `Unlimited active recall study & quizzes for ${paramCourse.toUpperCase()}`;
+      const customCourseInput = document.getElementById("custom-course-input");
+      if (customCourseInput) customCourseInput.value = paramCourse.toUpperCase();
     }
 
     if (paramStudentId && !paramStudentId.includes("OLODO/2026/01")) {
@@ -495,25 +587,91 @@
     document.getElementById("full-pass-desc").textContent = `Unlocks ALL ${paramLevel} courses for the entire ${periodName}.`;
     document.getElementById("perk-all-courses").textContent = `Unlocks all courses in ${paramLevel} (${paramSemester})`;
 
-    // 4. Plan Selection Handler
+    // 4. Plan & Quantity Pricing Engine (with automatic 10% discount when quantity > 5)
     let selectedPlan = "full";
+    let voucherQty = !isNaN(paramQty) && paramQty >= 1 ? Math.min(200, paramQty) : 1;
+    let lastGeneratedPinsList = [];
+
+    function getUnitPrice(plan) {
+      if (plan === "full") return 5000;
+      if (plan === "monthly") return 1500;
+      return 1000;
+    }
+
+    window.computeOrderPricing = function() {
+      const unitPrice = getUnitPrice(selectedPlan);
+      const qty = Math.max(1, Math.min(200, parseInt(document.getElementById("voucher-qty-input")?.value || "1", 10) || 1));
+      voucherQty = qty;
+      const subtotal = unitPrice * qty;
+      const hasDiscount = qty > 5;
+      const discount = hasDiscount ? Math.round(subtotal * 0.10) : 0;
+      const total = subtotal - discount;
+      return { unitPrice, qty, subtotal, hasDiscount, discount, total };
+    };
+
+    window.updatePricingUI = function() {
+      const { unitPrice, qty, subtotal, hasDiscount, discount, total } = window.computeOrderPricing();
+      const subLabel = document.getElementById("calc-subtotal-label");
+      const subVal = document.getElementById("calc-subtotal-val");
+      const discRow = document.getElementById("calc-discount-row");
+      const discVal = document.getElementById("calc-discount-val");
+      const totalVal = document.getElementById("calc-total-val");
+      const btnLabel = document.getElementById("btn-amount-label");
+      const liveBanner = document.getElementById("discount-live-banner");
+
+      if (subLabel) subLabel.textContent = `${qty} Voucher${qty > 1 ? "s" : ""} × ₦${unitPrice.toLocaleString()}`;
+      if (subVal) subVal.textContent = `₦${subtotal.toLocaleString()}`;
+      if (discRow) discRow.style.display = hasDiscount ? "flex" : "none";
+      if (discVal) discVal.textContent = `-₦${discount.toLocaleString()}`;
+      if (totalVal) totalVal.textContent = `₦${total.toLocaleString()}`;
+      if (btnLabel) {
+        btnLabel.textContent = `· ${qty} PIN${qty > 1 ? "s" : ""} · ₦${total.toLocaleString()}`;
+      }
+      if (liveBanner) {
+        if (hasDiscount) {
+          liveBanner.style.color = "#059669";
+          liveBanner.innerHTML = `🎉 <b>10% Bulk Discount Applied!</b> You save <b>₦${discount.toLocaleString()}</b>`;
+        } else {
+          liveBanner.style.color = "var(--muted)";
+          liveBanner.innerHTML = `💡 Buy 6+ vouchers to get an automatic <b>10% discount</b>!`;
+        }
+      }
+    };
+
+    window.setVoucherQty = function(q) {
+      const inp = document.getElementById("voucher-qty-input");
+      if (inp) inp.value = String(q);
+      window.updatePricingUI();
+    };
+
+    window.onQtyInputChanged = function() {
+      window.updatePricingUI();
+    };
 
     window.selectPlan = function(plan) {
       selectedPlan = plan;
       const cardFull = document.getElementById("plan-full");
+      const cardMonthly = document.getElementById("plan-monthly");
       const cardSingle = document.getElementById("plan-single");
-      const label = document.getElementById("btn-amount-label");
+      const courseInputWrap = document.getElementById("custom-course-code-wrap");
 
-      if (plan === "full") {
-        cardFull.classList.add("selected");
-        cardSingle.classList.remove("selected");
-        label.textContent = "· ₦5,000";
-      } else {
-        cardSingle.classList.add("selected");
-        cardFull.classList.remove("selected");
-        label.textContent = "· ₦1,000";
+      cardFull?.classList.toggle("selected", plan === "full");
+      cardMonthly?.classList.toggle("selected", plan === "monthly");
+      cardSingle?.classList.toggle("selected", plan === "single");
+      if (courseInputWrap) {
+        courseInputWrap.style.display = plan === "single" ? "block" : "none";
       }
+      window.updatePricingUI();
     };
+
+    if (paramPlan === "monthly" || paramPlan === "single" || paramPlan === "full") {
+      window.selectPlan(paramPlan);
+    }
+    if (voucherQty > 1) {
+      window.setVoucherQty(voucherQty);
+    } else {
+      window.updatePricingUI();
+    }
   </script>
 
   <!-- ES Module: Firestore & Paystack Integration -->
@@ -541,19 +699,58 @@
       return out;
     }
 
+    let generatedBatchPins = [];
+
     window.copyGeneratedPin = async function() {
-      const pinText = (document.getElementById("success-voucher-pin")?.textContent || "").trim();
+      const pinText = generatedBatchPins.length > 0
+        ? generatedBatchPins.join("\n")
+        : (document.getElementById("success-voucher-pin")?.textContent || "").trim();
       if (!pinText) return;
       try {
         await navigator.clipboard.writeText(pinText);
         const btn = document.getElementById("btn-copy-self-pin");
         if (btn) {
-          btn.textContent = "✓ PIN Copied to Clipboard!";
+          btn.textContent = `✓ Copied ${generatedBatchPins.length || 1} PIN(s)!`;
           btn.style.background = "#10B981";
         }
       } catch (_) {
-        prompt("Copy your Activation Voucher PIN:", pinText);
+        prompt("Copy your Activation Voucher PIN(s):", pinText);
       }
+    };
+
+    window.sharePinsWhatsApp = async function() {
+      if (generatedBatchPins.length === 0) return;
+      const planLabel = selectedPlan === "full"
+        ? "Full Semester Pass (₦5,000)"
+        : selectedPlan === "monthly"
+          ? "Monthly Pass (₦1,500 · 30 Days)"
+          : "Single Course Pass (₦1,000)";
+      const pinLines = generatedBatchPins.map((p, i) => `${i + 1}. *${p}*`).join("\n");
+      const msg =
+        `🎓 *OLODO ACTIVATION VOUCHER${generatedBatchPins.length > 1 ? "S" : ""} (${planLabel})*\n\n` +
+        `${pinLines}\n\n` +
+        `📲 *How to Activate:* Open the Olodo App → Select Course → Tap *Institutional Code* → Paste your PIN.`;
+      try {
+        await navigator.clipboard.writeText(msg);
+        alert("✓ WhatsApp delivery message copied to clipboard!");
+      } catch (_) {
+        prompt("Copy WhatsApp Message:", msg);
+      }
+    };
+
+    window.downloadPinsCsv = function() {
+      if (generatedBatchPins.length === 0) return;
+      const rows = [["SN", "Voucher_PIN", "Pass_Type", "Level", "Semester"]];
+      generatedBatchPins.forEach((p, idx) => {
+        rows.push([String(idx + 1), p, selectedPlan, paramLevel, paramSemester]);
+      });
+      const csv = rows.map((r) => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Olodo_Vouchers_${generatedBatchPins.length}PINs_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
     };
 
     const PAYSTACK_KEY = (typeof ENV !== "undefined" && ENV?.PAYSTACK_PUBLIC_KEY)
@@ -563,15 +760,32 @@
     window.triggerPayment = function() {
       const email = emailInput.value.trim();
       if (!email || !email.includes("@")) {
-        alert("Please enter a valid student email address so we can activate your pass.");
+        alert("Please enter a valid email address so we can generate and deliver your voucher PIN(s).");
         emailInput.focus();
         return;
       }
 
-      const amount = selectedPlan === "full" ? 5000 : 1000;
-      const cleanCourse = (paramCourse || "course").toLowerCase().replace(/[^a-z0-9]/g, "");
-      const passType = selectedPlan === "full" ? "semester_pass_180days" : `single_course_${cleanCourse}`;
+      const { unitPrice, qty, hasDiscount, discount, total } = window.computeOrderPricing();
+      const customCourseVal = (document.getElementById("custom-course-input")?.value || paramCourse || "").trim().toUpperCase();
+      const cleanCourse = (customCourseVal || "course").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const passType = selectedPlan === "full"
+        ? "semester_pass_180days"
+        : selectedPlan === "monthly"
+          ? "monthly_pass_30days"
+          : `single_course_${cleanCourse}`;
+      const pinType = selectedPlan === "full"
+        ? "full"
+        : selectedPlan === "monthly"
+          ? "monthly"
+          : "single_course";
+      const durationDays = selectedPlan === "monthly" ? 30 : 180;
       const paymentRef = "OLODO_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+
+      // Pre-generate the exact quantity of unique voucher PINs so both client and Paystack Webhook activate them
+      const preGeneratedPins = [];
+      for (let i = 0; i < qty; i++) {
+        preGeneratedPins.push(`OLODO-${generateVoucherBlock(4)}-${generateVoucherBlock(4)}`);
+      }
 
       const btn = document.getElementById("btn-pay-now");
       btn.disabled = true;
@@ -579,35 +793,41 @@
 
       function resetPayButton() {
         btn.disabled = false;
-        btn.innerHTML = `<span>🔒 Pay with Paystack</span><span>· ₦${amount.toLocaleString()}</span>`;
+        btn.innerHTML = `<span>🔒 Pay & Generate Voucher(s)</span><span id="btn-amount-label">· ${qty} PIN${qty > 1 ? "s" : ""} · ₦${total.toLocaleString()}</span>`;
       }
 
       async function onPaymentSuccess(response) {
         const reference = response?.reference || response?.trxref || paymentRef;
-        const generatedPin = `OLODO-${generateVoucherBlock(4)}-${generateVoucherBlock(4)}`;
-        const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(paramCourse || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(reference)}&pin=${encodeURIComponent(generatedPin)}`;
+        generatedBatchPins = preGeneratedPins;
+        const primaryPin = preGeneratedPins[0];
+        const returnUrl = `olodo://activated?status=success&email=${encodeURIComponent(email)}&type=${encodeURIComponent(passType)}&course=${encodeURIComponent(customCourseVal || "")}&level=${encodeURIComponent(paramLevel)}&semester=${encodeURIComponent(paramSemester)}&ref=${encodeURIComponent(reference)}&pin=${encodeURIComponent(primaryPin)}`;
 
-        // 1. Create a verified self-service Voucher PIN in Firestore `institutional_pins`
+        // 1. Activate all generated Voucher PINs in Firestore `institutional_pins`
         try {
-          await setDoc(doc(db, "institutional_pins", generatedPin), {
-            active: true,
-            type: selectedPlan === "full" ? "full" : "single_course",
-            courseCode: selectedPlan === "single" ? (paramCourse || "").toUpperCase() : "",
-            level: paramLevel,
-            semester: paramSemester,
-            maxRedemptions: 1,
-            timesRedeemed: 0,
-            price: amount,
-            note: `Self-Service Paystack (${reference})`,
-            buyerEmail: email.toLowerCase(),
-            reference: reference,
-            channel: "paystack_self_service",
-            createdAt: serverTimestamp(),
-            createdAtMs: Date.now(),
-            redeemedBy: []
-          });
+          const writes = preGeneratedPins.map((pinCode) =>
+            setDoc(doc(db, "institutional_pins", pinCode), {
+              pin: pinCode,
+              active: true,
+              type: pinType,
+              courseCode: pinType === "single_course" ? customCourseVal : "",
+              level: paramLevel,
+              semester: paramSemester,
+              maxRedemptions: 1,
+              timesRedeemed: 0,
+              price: unitPrice,
+              faceValue: unitPrice,
+              note: `Self-Service (${qty} PIN${qty > 1 ? "s" : ""}${hasDiscount ? " · 10% Bulk Discount" : ""} · ${reference})`,
+              buyerEmail: email.toLowerCase(),
+              reference: reference,
+              channel: "paystack_self_service",
+              createdAt: serverTimestamp(),
+              createdAtMs: Date.now(),
+              redeemedBy: []
+            })
+          );
+          await Promise.all(writes);
         } catch (e) {
-          console.error("Error generating self-service PIN in Firestore:", e);
+          console.error("Error generating self-service PIN(s) in Firestore:", e);
         }
 
         // 2. Record purchase into Firestore purchases collection
@@ -620,43 +840,61 @@
             department: paramDepartment,
             level: paramLevel,
             semester: paramSemester,
-            courseCode: (paramCourse || "").toUpperCase(),
+            courseCode: customCourseVal,
             type: passType,
-            voucherPin: generatedPin,
-            price: amount.toString(),
+            voucherPin: primaryPin,
+            voucherPins: preGeneratedPins,
+            quantity: qty,
+            unitPrice: unitPrice,
+            discountApplied: hasDiscount,
+            discountAmount: discount,
+            price: total.toString(),
             reference: reference,
             channel: "paystack_web",
             status: "verified",
             purchasedAt: serverTimestamp(),
-            expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
+            expiresAt: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000),
           });
         } catch (e) {
           console.error("Error logging purchase to Firestore:", e);
         }
 
-        // 3. Switch UI to success confirmation view & display Voucher PIN
+        // 3. Switch UI to success confirmation view & display all generated Voucher PIN(s)
         document.getElementById("checkout-view").style.display = "none";
         document.getElementById("success-view").style.display = "block";
         document.getElementById("success-ref").textContent = reference;
         document.getElementById("success-email").textContent = email;
-        document.getElementById("success-voucher-pin").textContent = generatedPin;
-        document.getElementById("success-plan").textContent = selectedPlan === "full"
-          ? `Full Semester Pass (${paramLevel})`
-          : `Single Course Pass (${(paramCourse || "Selected Course").toUpperCase()})`;
-        document.getElementById("success-detail").textContent = selectedPlan === "full"
-          ? `Full access activated for ${paramInstitution} · ${paramLevel}.`
-          : `Single Pass activated for ${(paramCourse || "Selected Course").toUpperCase()}.`;
 
-        // 4. Configure return button and trigger deep-link redirect to Olodo App
+        const pinContainer = document.getElementById("success-voucher-pin");
+        if (pinContainer) {
+          pinContainer.innerHTML = preGeneratedPins
+            .map((p, idx) => `<div style="padding: 4px 8px; border-bottom: 1px dashed #E2E8F0;">${qty > 1 ? `<span style="font-size:12px;color:#64748B;margin-right:8px;">#${idx + 1}</span>` : ""}${p}</div>`)
+            .join("");
+        }
+
+        const planLabel = selectedPlan === "full"
+          ? `Full Semester Pass (${paramLevel})`
+          : selectedPlan === "monthly"
+            ? `Monthly Access Pass (30 Days · ${paramLevel})`
+            : `Single Course Pass (${customCourseVal || "Selected Course"})`;
+
+        document.getElementById("success-plan").textContent = `${qty} × ${planLabel}${hasDiscount ? " (10% Bulk Discount Applied)" : ""}`;
+        document.getElementById("success-detail").textContent = qty > 1
+          ? `Generated ${qty} live activation voucher PINs! Copy or download them below.`
+          : `Your ${planLabel} is now active on ${email} and via your PIN below.`;
+
+        // 4. Configure return button
         const returnBtn = document.getElementById("btn-return-app");
         if (returnBtn) {
           returnBtn.href = returnUrl;
         }
 
-        // Automatically launch Olodo app after 2.5s (leaving this PIN receipt visible in browser)
-        setTimeout(() => {
-          window.location.href = returnUrl;
-        }, 2500);
+        // Only auto-redirect to mobile app if student bought 1 PIN from mobile deep link
+        if (qty === 1 && params.has("email")) {
+          setTimeout(() => {
+            window.location.href = returnUrl;
+          }, 2500);
+        }
       }
 
       if (typeof PaystackPop === "undefined") {
@@ -670,17 +908,26 @@
         popup.newTransaction({
           key: PAYSTACK_KEY,
           email: email,
-          amount: amount * 100, // Amount in Kobo (5000 NGN = 500000 kobo, 1000 NGN = 100000 kobo)
+          amount: total * 100, // Amount in Kobo after 10% bulk discount if qty > 5
           currency: "NGN",
           reference: paymentRef,
           metadata: {
+            email: email,
+            passType: passType,
+            courseCode: customCourseVal || "ALL",
+            level: paramLevel,
+            semester: paramSemester,
+            quantity: qty,
+            unitPrice: unitPrice,
+            discountApplied: hasDiscount,
+            voucherPins: preGeneratedPins,
             custom_fields: [
-              { display_name: "Student Email", variable_name: "student_email", value: email },
-              { display_name: "Student ID", variable_name: "student_id", value: paramStudentId },
+              { display_name: "Buyer Email", variable_name: "student_email", value: email },
               { display_name: "Pass Type", variable_name: "pass_type", value: passType },
-              { display_name: "Course Code", variable_name: "course_code", value: (paramCourse || "All").toUpperCase() },
+              { display_name: "Quantity", variable_name: "quantity", value: String(qty) },
+              { display_name: "Discount Applied", variable_name: "discount", value: hasDiscount ? "10% Bulk Discount" : "None" },
+              { display_name: "Course Code", variable_name: "course_code", value: customCourseVal || "ALL" },
               { display_name: "Institution", variable_name: "institution", value: paramInstitution },
-              { display_name: "Department", variable_name: "department", value: paramDepartment },
               { display_name: "Level", variable_name: "academic_level", value: paramLevel },
               { display_name: "Semester", variable_name: "semester", value: paramSemester },
             ],

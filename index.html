@@ -44,9 +44,22 @@
     </div>
 
     <nav class="sidebar-nav">
-      <div class="nav-section-label">TEACHING & ROYALTIES</div>
+      <div class="nav-section-label">PORTAL GATEWAY</div>
 
-      <button class="nav-item active" data-tab="tab-overview">
+      <button class="nav-item active" data-tab="tab-welcome">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        <span>Welcome Hub</span>
+      </button>
+
+      <a href="passes.html" class="nav-item" style="text-decoration: none; color: inherit;">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+        <span>Buy Access Voucher(s)</span>
+        <span class="badge badge-success" style="margin-left: auto; font-size: 10px;">-10%</span>
+      </a>
+
+      <div class="nav-section-label" style="margin-top: 10px;">LECTURER & CREATOR STUDIO</div>
+
+      <button class="nav-item" data-tab="tab-overview">
         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
         <span>Overview & Royalties</span>
       </button>
@@ -211,9 +224,106 @@
     </dialog>
 
     <!-- ============================================== -->
+    <!-- WELCOME HUB: CHOOSE LECTURER OR STUDENT STORE  -->
+    <!-- ============================================== -->
+    <section id="tab-welcome" class="tab-content">
+      <div class="revenue-box" style="margin-bottom: 24px; background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 65%, #06B6D4 100%);">
+        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #38BDF8; margin-bottom: 6px;">
+          WELCOME TO OLODO OFFICIAL WEB PORTAL
+        </div>
+        <h1 style="font-size: 26px; font-weight: 900; color: #FFFFFF; margin-bottom: 8px; line-height: 1.25;">
+          Active Recall Study, AI Question Generation & Instant Campus Vouchers
+        </h1>
+        <p style="font-size: 14px; color: rgba(255,255,255,0.9); max-width: 720px; line-height: 1.55;">
+          Select your destination below — whether you are a <b>Student / Class Representative</b> purchasing single or bulk activation vouchers, or a <b>Lecturer / Educator</b> generating question banks and earning royalties.
+        </p>
+      </div>
+
+      <div class="grid-cols-2" style="gap: 22px; margin-bottom: 24px;">
+        <!-- PATHWAY 1: STUDENT & CAMPUS REP VOUCHER STORE -->
+        <div class="card" style="border: 2px solid #06B6D4; position: relative; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="badge badge-success" style="font-size: 11.5px; padding: 5px 10px;">🎓 FOR STUDENTS & CLASS REPS</span>
+              <span style="background: #DCFCE7; color: #166534; font-size: 11.5px; font-weight: 800; padding: 4px 10px; border-radius: 999px;">
+                🔥 10% OFF above 5 Vouchers!
+              </span>
+            </div>
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--primary); margin-bottom: 8px;">
+              🎟️ Buy Student Access Vouchers
+            </h2>
+            <p style="font-size: 13.5px; color: var(--muted); margin-bottom: 16px; line-height: 1.5;">
+              Generate single or multiple instant activation PINs for the Olodo mobile app. Perfect for individual students, study groups, and departmental class representatives.
+            </p>
+
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span><b>Single Course Pass</b> (1 Course · 180 Days)</span>
+                <b style="color: var(--primary);">₦1,000</b>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border);">
+                <span><b>Monthly Access Pass</b> (All Courses · 30 Days)</span>
+                <b style="color: #D97706;">₦1,500</b>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border);">
+                <span><b>Full Semester Pass</b> (All Courses · 180 Days)</span>
+                <b style="color: var(--success);">₦5,000</b>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="passes.html" class="btn btn-primary" style="text-align: center; text-decoration: none; font-weight: 800; padding: 13px 18px; font-size: 14.5px;">
+              💳 Go to Voucher Payment Page (Single & Bulk) →
+            </a>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <a href="passes.html?plan=monthly&qty=1" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; font-weight: 700;">
+                ⚡ Monthly (₦1,500)
+              </a>
+              <a href="passes.html?plan=full&qty=6" class="btn btn-outline btn-sm" style="flex: 1; text-align: center; text-decoration: none; font-weight: 700; border-color: var(--success); color: var(--success);">
+                🎉 Buy 6+ PINs (10% OFF)
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- PATHWAY 2: LECTURER & EDUCATOR STUDIO -->
+        <div class="card" style="border: 2px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="badge badge-primary" style="font-size: 11.5px; padding: 5px 10px;">👨‍🏫 FOR LECTURERS & EDUCATORS</span>
+              <span style="font-size: 12px; font-weight: 700; color: var(--primary);">70% Educator Royalty Pool</span>
+            </div>
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--primary); margin-bottom: 8px;">
+              ✨ AI Question Generator & Course Studio
+            </h2>
+            <p style="font-size: 13.5px; color: var(--muted); margin-bottom: 16px; line-height: 1.5;">
+              Upload past question PDFs or lecture summaries, generate verified MCQs, FBQs, explanations & clean vector diagrams with AI, and publish to students nationwide.
+            </p>
+
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+              <div>✓ <b>Option 1 & 2 PDF Engine:</b> Extract Past Questions or Generate from Lecture Notes</div>
+              <div>✓ <b>Auto-Checkpointing & Merge:</b> Resume interrupted batches & append to existing courses</div>
+              <div>✓ <b>Live Royalties:</b> Track student unlocks and withdraw earnings directly</div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button type="button" class="btn btn-primary" id="btn-welcome-go-upload" style="font-weight: 800; padding: 13px 18px; font-size: 14.5px;">
+              🚀 Open AI Question Generator & Upload Studio →
+            </button>
+            <button type="button" class="btn btn-outline" id="btn-welcome-go-overview" style="font-weight: 700; padding: 10px 16px;">
+              📊 View Lecturer Royalty Dashboard & My Courses
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
     <!-- TAB 1: OVERVIEW & REVENUE DASHBOARD            -->
     <!-- ============================================== -->
-    <section id="tab-overview" class="tab-content">
+    <section id="tab-overview" class="tab-content" style="display: none;">
       <div class="top-bar">
         <div>
           <h1 class="page-title">Educator Royalty Dashboard</h1>
@@ -1139,7 +1249,8 @@
           <div class="form-group">
             <label>Pass Type & Value</label>
             <select id="voucher-pass-type">
-              <option value="full" selected>Full Semester / Term Pass (₦5,000 · All Courses)</option>
+              <option value="full" selected>Full Semester / Term Pass (₦5,000 · All Courses · 180 Days)</option>
+              <option value="monthly">Monthly Access Pass (₦1,500 · All Courses · 30 Days)</option>
               <option value="single_course">Single Subject / Course Pass (₦1,000 · 1 Course)</option>
             </select>
           </div>

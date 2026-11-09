@@ -81,9 +81,17 @@ exports.paystackWebhook = onRequest(
             ? `single_course_${courseCode.toLowerCase().replace(/[^a-z0-9]/g, "")}`
             : "semester_pass_180days");
         const amountInNaira = data.amount ? Math.round(data.amount / 100) : 0;
+        const quantity = Math.max(1, Math.min(200, Number(meta.quantity) || 1));
+        const unitPrice = Number(meta.unitPrice) || amountInNaira;
+        const discountApplied = Boolean(meta.discountApplied || quantity > 5);
+        const voucherPins = Array.isArray(meta.voucherPins) ? meta.voucherPins : [];
 
+        const isMonthly =
+          String(passType).toLowerCase() === "monthly" ||
+          String(passType).toLowerCase().startsWith("monthly_pass");
+        const durationDays = isMonthly ? 30 : 180;
         const now = new Date();
-        const expiresAt = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+        const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
         const purchaseDoc = {
           userEmail: email,
@@ -93,6 +101,10 @@ exports.paystackWebhook = onRequest(
           courseCode: courseCode,
           level: level,
           semester: semester,
+          quantity: quantity,
+          unitPrice: unitPrice,
+          discountApplied: discountApplied,
+          voucherPins: voucherPins,
           price: amountInNaira.toString(),
           channel: "paystack_webhook",
           status: "verified",
@@ -109,8 +121,44 @@ exports.paystackWebhook = onRequest(
             .doc(reference)
             .set(purchaseDoc, { merge: true });
 
+          if (voucherPins.length > 0) {
+            const pinType =
+              courseCode && courseCode !== "ALL" && String(passType).includes("single")
+                ? "single_course"
+                : isMonthly
+                  ? "monthly"
+                  : "full";
+            const batch = getDb().batch();
+            for (const rawPin of voucherPins) {
+              const cleanPin = String(rawPin || "").trim().toUpperCase();
+              if (!cleanPin) continue;
+              const pinRef = getDb().collection("institutional_pins").doc(cleanPin);
+              batch.set(
+                pinRef,
+                {
+                  pin: cleanPin,
+                  type: pinType,
+                  courseCode: pinType === "single_course" ? courseCode : "",
+                  level: level === "General" ? "" : level,
+                  semester: semester,
+                  maxRedemptions: 1,
+                  timesRedeemed: 0,
+                  active: true,
+                  faceValue: unitPrice,
+                  channel: "paystack_self_service",
+                  buyerEmail: email,
+                  paystackReference: reference,
+                  note: `Self-Service (${quantity} PIN${quantity > 1 ? "s" : ""}${discountApplied ? " · 10% Off" : ""})`,
+                  createdAt: getAdmin().firestore.FieldValue.serverTimestamp(),
+                },
+                { merge: true }
+              );
+            }
+            await batch.commit();
+          }
+
           console.log(
-            `✓ Purchase recorded: Ref=${reference}, Email=${email}, Type=${passType}, Course=${courseCode}`
+            `✓ Purchase recorded: Ref=${reference}, Email=${email}, Type=${passType}, Qty=${quantity}`
           );
         }
       }

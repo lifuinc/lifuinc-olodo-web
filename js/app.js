@@ -263,7 +263,7 @@ function initNavigation() {
   backdrop?.addEventListener("click", closeDrawer);
 
   // Tab switching
-  $$(".nav-item").forEach((btn) => {
+  $$(".nav-item[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
       $$(".nav-item").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
@@ -279,6 +279,23 @@ function initNavigation() {
       }
     });
   });
+
+  // Welcome Hub Pathway Buttons
+  $("#btn-welcome-go-upload")?.addEventListener("click", () => {
+    $('[data-tab="tab-upload"]')?.click();
+  });
+
+  $("#btn-welcome-go-overview")?.addEventListener("click", () => {
+    $('[data-tab="tab-overview"]')?.click();
+  });
+
+  // Support deep link ?view=lecturer from passes.html
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("view") === "lecturer") {
+    setTimeout(() => {
+      $('[data-tab="tab-overview"]')?.click();
+    }, 50);
+  }
 
   // Quick Action Buttons
   $("#btn-quick-upload")?.addEventListener("click", () => {
@@ -694,8 +711,13 @@ function renderVettingStatusBanner() {
 // ==========================================
 // 4. QUESTION BANKS RETRIEVAL & RENDERING
 // ==========================================
-function buildCohortKey(institution, level, semester) {
+function buildCohortKey(institution, department, level, semester) {
   const cleanInst = String(institution || "general")
+    .split("(")[0]
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const cleanDept = String(department || "general")
     .split("(")[0]
     .trim()
     .toLowerCase()
@@ -709,12 +731,12 @@ function buildCohortKey(institution, level, semester) {
     .replace(/second/g, "2nd")
     .replace(/third/g, "3rd")
     .replace(/[^a-z0-9]/g, "");
-  return `${cleanInst}_${cleanLevel}_${cleanSem}`;
+  return `${cleanInst || "general"}_${cleanDept || "general"}_${cleanLevel || "100level"}_${cleanSem || "1stsemester"}`;
 }
 
 // Syncs lightweight metadata-only catalogue documents (zero questions) in Firestore
-// so students sharing the same Institution + Level + Semester fetch 1 tiny shared index
-// instead of downloading full question banks before clicking Download.
+// scoped by Institution + Department + Level + Semester so students with the same
+// criteria read their shared cached catalogue without scanning the courses collection.
 async function syncCourseCatalogues(coursesList) {
   if (!currentUser || !Array.isArray(coursesList) || coursesList.length === 0) return;
   try {
@@ -725,10 +747,15 @@ async function syncCourseCatalogues(coursesList) {
 
     const masterItems = [];
     const cohortMap = {};
+    const generalByInstLevelSem = {};
 
     for (const c of publishedList) {
       const trueId = c.docId || c.id;
       if (!trueId) continue;
+      const depts =
+        Array.isArray(c.departments) && c.departments.length > 0
+          ? c.departments
+          : [c.department || "General"];
       const meta = {
         id: trueId,
         docId: trueId,
@@ -737,10 +764,7 @@ async function syncCourseCatalogues(coursesList) {
         tier: c.tier || "tertiary",
         institution: c.institution || "General",
         department: c.department || "General",
-        departments:
-          Array.isArray(c.departments) && c.departments.length > 0
-            ? c.departments
-            : [c.department || "General"],
+        departments: depts,
         level: c.level || "100 Level",
         semester: c.semester || c.period || "1st Semester",
         period: c.period || c.semester || "1st Semester",
@@ -756,9 +780,32 @@ async function syncCourseCatalogues(coursesList) {
       };
 
       masterItems.push(meta);
-      const cKey = buildCohortKey(meta.institution, meta.level, meta.semester);
-      if (!cohortMap[cKey]) cohortMap[cKey] = [];
-      cohortMap[cKey].push(meta);
+
+      const uniqueDepts = new Set([meta.department, ...depts]);
+      for (const d of uniqueDepts) {
+        const cKey = buildCohortKey(meta.institution, d, meta.level, meta.semester);
+        if (!cohortMap[cKey]) cohortMap[cKey] = new Map();
+        cohortMap[cKey].set(meta.id, meta);
+
+        const normD = String(d || "").toLowerCase();
+        if (normD.includes("general") || normD.includes("gst") || normD.includes("all")) {
+          const ilsKey = buildCohortKey(meta.institution, "general", meta.level, meta.semester);
+          if (!generalByInstLevelSem[ilsKey]) generalByInstLevelSem[ilsKey] = [];
+          generalByInstLevelSem[ilsKey].push(meta);
+        }
+      }
+    }
+
+    // Also include General Studies (GST) courses for that Institution + Level + Semester in every department cohort
+    for (const [cKey, map] of Object.entries(cohortMap)) {
+      const parts = cKey.split("_");
+      if (parts.length === 4) {
+        const ilsKey = `${parts[0]}_general_${parts[2]}_${parts[3]}`;
+        const genList = generalByInstLevelSem[ilsKey] || [];
+        for (const g of genList) {
+          map.set(g.id, g);
+        }
+      }
     }
 
     const writes = [
@@ -769,7 +816,8 @@ async function syncCourseCatalogues(coursesList) {
       })
     ];
 
-    for (const [cKey, list] of Object.entries(cohortMap)) {
+    for (const [cKey, map] of Object.entries(cohortMap)) {
+      const list = Array.from(map.values());
       writes.push(
         setDoc(doc(db, "course_catalogues", cKey), {
           cohortKey: cKey,
@@ -2716,13 +2764,17 @@ function renderAdminVouchers() {
         statusBadge = `<span class="badge badge-accent">⚡ In Use (${usedR}/${maxR})</span>`;
       }
 
-      const isFull = (v.type || "full") === "full";
+      const vType = v.type || "full";
+      const isFull = vType === "full";
+      const isMonthly = vType === "monthly" || vType.startsWith("monthly");
       const typeLabel = isFull
         ? `<b style="color: var(--primary);">Full Semester Pass</b> <span style="font-size:11px;color:var(--muted);">(₦5,000)</span>`
-        : `<b style="color: var(--accent);">Single Course Pass</b> <span style="font-size:11px;color:var(--muted);">(₦1,000)</span>`;
+        : isMonthly
+          ? `<b style="color: #D97706;">Monthly Access Pass</b> <span style="font-size:11px;color:var(--muted);">(₦1,500 · 30d)</span>`
+          : `<b style="color: var(--accent);">Single Course Pass</b> <span style="font-size:11px;color:var(--muted);">(₦1,000)</span>`;
 
       const scopeItems = [
-        v.courseCode ? `Course: <b>${v.courseCode.toUpperCase()}</b>` : (isFull ? "All Courses" : "Any 1 Course"),
+        v.courseCode ? `Course: <b>${v.courseCode.toUpperCase()}</b>` : (isFull || isMonthly ? "All Courses" : "Any 1 Course"),
         v.level || "Any Level",
         v.semester || "Any Semester"
       ];
@@ -2893,7 +2945,7 @@ function initVoucherEngine() {
     const rawPrefix = ($("#voucher-prefix")?.value || "OLODO").trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
     const cleanPrefix = rawPrefix || "OLODO";
     const note = ($("#voucher-note")?.value || "").trim();
-    const price = passType === "full" ? 5000 : 1000;
+    const price = passType === "full" ? 5000 : passType === "monthly" ? 1500 : 1000;
 
     genBtn.disabled = true;
     const origText = genBtn.textContent;
