@@ -6,7 +6,50 @@
   <title>Olodo · Active Recall Study & Educator Platform</title>
   <meta name="theme-color" content="#050916">
   <link rel="icon" type="image/png" href="assets/logo.png">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20261109v5">
+  <style>
+    body.landing-mode,
+    body.onboarding-mode {
+      display: block !important;
+      background:
+        radial-gradient(circle at 25% 20%, rgba(0, 194, 255, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 75% 80%, rgba(0, 102, 255, 0.14) 0%, transparent 50%),
+        #050916 !important;
+      color: #F1F5F9 !important;
+    }
+    body.landing-mode .sidebar,
+    body.landing-mode .mobile-topbar,
+    body.landing-mode .drawer-backdrop,
+    body.landing-mode main.content-area,
+    body.onboarding-mode .sidebar,
+    body.onboarding-mode .mobile-topbar,
+    body.onboarding-mode .drawer-backdrop,
+    body.onboarding-mode main.content-area {
+      display: none !important;
+    }
+    body:not(.landing-mode) #landing-screen {
+      display: none !important;
+    }
+    body:not(.onboarding-mode) #lecturer-onboarding-screen {
+      display: none !important;
+    }
+    body.onboarding-mode #lecturer-onboarding-screen {
+      display: flex !important;
+    }
+    .onboarding-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: clamp(22px, 3vw, 34px);
+      align-items: stretch;
+      margin: auto 0;
+    }
+    @media (max-width: 860px) {
+      .onboarding-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+  </style>
 </head>
 <body class="landing-mode">
 
@@ -98,7 +141,7 @@
   <!-- LECTURER ONBOARDING SCREEN (Sign In -> Apply -> Get Approved) -->
   <!-- Visible before a lecturer is approved; hides full dashboard   -->
   <!-- ============================================================ -->
-  <div id="lecturer-onboarding-screen" class="landing-wrapper" style="display: none;">
+  <div id="lecturer-onboarding-screen" class="landing-wrapper">
     <header class="landing-nav">
       <button type="button" id="btn-onboard-back-home" class="play-badge-pill" style="background: rgba(14, 22, 42, 0.9); border: 1px solid #1A2847; cursor: pointer;">
         ← Back to Home
@@ -1481,6 +1524,6 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=20261109v5"></script>
 </body>
 </html>

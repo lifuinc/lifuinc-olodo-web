@@ -281,9 +281,18 @@ function initNavigation() {
   });
 
   // Enter Lecturer Portal (checks Auth & Approval gate before showing full dashboard)
-  window.enterLecturerPortal = (targetTab = "tab-overview") => {
+  window.enterLecturerPortal = async (targetTab = "tab-overview") => {
+    const hasActiveTabSession = sessionStorage.getItem("olodo_active_lecturer_session") === "1";
+    if (!hasActiveTabSession && currentUser) {
+      try {
+        await signOut(auth);
+      } catch (_) {}
+      currentUser = null;
+      currentLecturerProfile = null;
+    }
+
     const isSuperAdmin = currentUser && currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-    const isApproved = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified");
+    const isApproved = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified" && currentLecturerProfile.applied === true);
 
     if (!currentUser || !isApproved) {
       document.body.classList.remove("landing-mode");
@@ -572,7 +581,8 @@ function syncLecturerOnboardingUI() {
   const pendingCard = $("#onboard-pending-card");
   if (!authCard || !applyCard || !pendingCard) return;
 
-  if (!currentUser) {
+  const hasActiveTabSession = sessionStorage.getItem("olodo_active_lecturer_session") === "1";
+  if (!currentUser || !hasActiveTabSession) {
     authCard.style.display = "block";
     applyCard.style.display = "none";
     pendingCard.style.display = "none";
@@ -580,7 +590,7 @@ function syncLecturerOnboardingUI() {
   }
 
   const isSuperAdmin = currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-  const isApproved = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified");
+  const isApproved = isSuperAdmin || (currentLecturerProfile && currentLecturerProfile.status === "verified" && currentLecturerProfile.applied === true);
 
   // If approved while on the onboarding screen, immediately unlock the full Lecturer Studio dashboard!
   if (isApproved) {
@@ -651,6 +661,7 @@ function initAuth() {
   const handleGoogleSignIn = async (errEl) => {
     try {
       if (errEl) errEl.style.display = "none";
+      sessionStorage.setItem("olodo_active_lecturer_session", "1");
       await signInWithPopup(auth, googleProvider);
       modal?.close();
     } catch (err) {
@@ -671,6 +682,7 @@ function initAuth() {
     if (!email || !pass) return;
     try {
       $("#auth-error").style.display = "none";
+      sessionStorage.setItem("olodo_active_lecturer_session", "1");
       await signInWithEmailAndPassword(auth, email, pass);
       modal.close();
     } catch (err) {
@@ -692,6 +704,7 @@ function initAuth() {
     }
     try {
       if (errEl) errEl.style.display = "none";
+      sessionStorage.setItem("olodo_active_lecturer_session", "1");
       await signInWithEmailAndPassword(auth, email, pass);
     } catch (err) {
       if (errEl) {
@@ -708,6 +721,7 @@ function initAuth() {
     if (!email || !pass) return;
     try {
       $("#auth-error").style.display = "none";
+      sessionStorage.setItem("olodo_active_lecturer_session", "1");
       await createUserWithEmailAndPassword(auth, email, pass);
       modal.close();
     } catch (err) {
@@ -729,6 +743,7 @@ function initAuth() {
     }
     try {
       if (errEl) errEl.style.display = "none";
+      sessionStorage.setItem("olodo_active_lecturer_session", "1");
       await createUserWithEmailAndPassword(auth, email, pass);
     } catch (err) {
       if (errEl) {
@@ -802,6 +817,7 @@ function initAuth() {
   // Sign Out buttons
   const doSignOut = async () => {
     isEditingApplication = false;
+    sessionStorage.removeItem("olodo_active_lecturer_session");
     await signOut(auth);
   };
   $("#btn-logout")?.addEventListener("click", doSignOut);
@@ -2428,7 +2444,7 @@ window.approveEducator = async function (uid) {
   if (!confirm("Approve and verify this educator? All their uploaded question packs will immediately be pushed live to student mobile devices.")) return;
 
   try {
-    await setDoc(doc(db, "lecturers", uid), { status: "verified" }, { merge: true });
+    await setDoc(doc(db, "lecturers", uid), { status: "verified", applied: true }, { merge: true });
 
     // Update their courses to published: true & vettingStatus: 'verified'
     const foundLecturer = allLecturers.find((l) => l.uid === uid);
