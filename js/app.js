@@ -2447,7 +2447,8 @@ async function loadAdminData() {
     loadAdminVettingQueue(),
     loadAdminFinancials(),
     loadAdminAnalytics(),
-    loadAdminVouchers()
+    loadAdminVouchers(),
+    loadAdminBroadcastConfig()
   ]);
 }
 
@@ -3494,6 +3495,121 @@ function exportVouchersToCsv(list, filename) {
 }
 
 // ==========================================
+// 8. APP BROADCAST & FLYER MANAGER (ZENITH STYLE)
+// ==========================================
+function updateBroadcastLivePreview() {
+  const active = $("#broadcast-active")?.checked ?? false;
+  const imgUrl = ($("#broadcast-image-url")?.value || "").trim();
+  const title = ($("#broadcast-title")?.value || "").trim() || "Announcement";
+  const desc = ($("#broadcast-message")?.value || "").trim();
+  const actionText = ($("#broadcast-action-text")?.value || "").trim();
+
+  const bgImg = $("#preview-bg-image");
+  const fallback = $("#preview-fallback-content");
+  const previewTitle = $("#preview-title");
+  const previewDesc = $("#preview-desc");
+  const actionBtn = $("#preview-action-btn");
+  const statusBadge = $("#broadcast-status-badge");
+
+  if (statusBadge) {
+    if (active) {
+      statusBadge.className = "badge badge-success";
+      statusBadge.textContent = "🟢 Live on Mobile";
+    } else {
+      statusBadge.className = "badge badge-danger";
+      statusBadge.textContent = "⚪ Inactive / Hidden";
+    }
+  }
+
+  if (previewTitle) previewTitle.textContent = title;
+  if (previewDesc) previewDesc.textContent = desc || "Preview description will appear here...";
+
+  if (actionBtn) {
+    if (actionText) {
+      actionBtn.style.display = "block";
+      actionBtn.textContent = actionText;
+    } else {
+      actionBtn.style.display = "none";
+    }
+  }
+
+  if (imgUrl) {
+    if (bgImg) {
+      bgImg.style.display = "block";
+      bgImg.style.backgroundImage = `url('${imgUrl}')`;
+    }
+    if (fallback) fallback.style.display = "none";
+  } else {
+    if (bgImg) bgImg.style.display = "none";
+    if (fallback) fallback.style.display = "flex";
+  }
+}
+
+async function loadAdminBroadcastConfig() {
+  try {
+    const snap = await getDoc(doc(db, "app_config", "announcement"));
+    if (snap.exists()) {
+      const data = snap.data();
+      if ($("#broadcast-active")) $("#broadcast-active").checked = data.active === true;
+      if ($("#broadcast-version")) $("#broadcast-version").value = data.version || "v1";
+      if ($("#broadcast-image-url")) $("#broadcast-image-url").value = data.imageUrl || "";
+      if ($("#broadcast-title")) $("#broadcast-title").value = data.title || "";
+      if ($("#broadcast-message")) $("#broadcast-message").value = data.message || "";
+      if ($("#broadcast-action-text")) $("#broadcast-action-text").value = data.actionText || "";
+      if ($("#broadcast-action-url")) $("#broadcast-action-url").value = data.actionUrl || "https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo";
+    }
+    updateBroadcastLivePreview();
+  } catch (err) {
+    console.warn("Error loading announcement config:", err);
+  }
+}
+
+async function saveAdminBroadcastConfig() {
+  const saveBtn = $("#btn-save-broadcast");
+  const originalText = saveBtn ? saveBtn.innerHTML : "";
+  try {
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = "⏳ Saving to Cloud...";
+    }
+
+    const payload = {
+      active: $("#broadcast-active")?.checked ?? false,
+      version: ($("#broadcast-version")?.value || "").trim() || "v1",
+      imageUrl: ($("#broadcast-image-url")?.value || "").trim(),
+      title: ($("#broadcast-title")?.value || "").trim() || "Announcement",
+      message: ($("#broadcast-message")?.value || "").trim(),
+      actionText: ($("#broadcast-action-text")?.value || "").trim(),
+      actionUrl: ($("#broadcast-action-url")?.value || "").trim(),
+      updatedAt: serverTimestamp(),
+      updatedBy: currentUser?.email || "admin"
+    };
+
+    await setDoc(doc(db, "app_config", "announcement"), payload, { merge: true });
+    updateBroadcastLivePreview();
+    alert("✓ Broadcast flyer settings saved successfully! Mobile app users will see this when active.");
+  } catch (err) {
+    console.error("Failed to save broadcast config:", err);
+    alert("Failed to save broadcast settings: " + err.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalText;
+    }
+  }
+}
+
+function initAdminBroadcast() {
+  $("#btn-save-broadcast")?.addEventListener("click", saveAdminBroadcastConfig);
+  $("#btn-refresh-broadcast")?.addEventListener("click", loadAdminBroadcastConfig);
+
+  ["broadcast-active", "broadcast-image-url", "broadcast-title", "broadcast-message", "broadcast-action-text"].forEach((id) => {
+    $(`#${id}`)?.addEventListener("input", updateBroadcastLivePreview);
+    $(`#${id}`)?.addEventListener("change", updateBroadcastLivePreview);
+  });
+}
+
+// ==========================================
 // INITIALIZATION
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
@@ -3513,6 +3629,7 @@ document.addEventListener("DOMContentLoaded", () => {
   safeInit(initSimulatorAndBank);
   safeInit(initShareDeptListeners);
   safeInit(initVoucherEngine);
+  safeInit(initAdminBroadcast);
   $("#btn-admin-refresh-vetting")?.addEventListener("click", () => loadAdminVettingQueue());
   $("#btn-refresh-courses")?.addEventListener("click", () => loadCoursesFromFirestore());
   $("#btn-refresh-analytics")?.addEventListener("click", () => loadAdminAnalytics());

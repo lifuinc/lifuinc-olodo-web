@@ -416,6 +416,11 @@
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
           <span>Voucher & PIN Engine</span>
         </button>
+
+        <button class="nav-item admin-nav" data-tab="tab-admin-broadcast">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+          <span>App Broadcast Flyer</span>
+        </button>
       </div>
     </nav>
 
@@ -1529,6 +1534,102 @@
         </div>
 
         <div class="mobile-card-feed" id="vouchers-mobile-feed"></div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SUPER ADMIN TAB 5: IN-APP BROADCAST FLYER      -->
+    <!-- ============================================== -->
+    <section id="tab-admin-broadcast" class="tab-content" style="display: none;">
+      <div class="top-bar">
+        <div>
+          <h1 class="page-title">📢 In-App Broadcast & Announcement Flyer</h1>
+          <p class="page-desc">Publish real-time flyer overlays to students upon opening the Olodo mobile app (Zenith Bank style popup).</p>
+        </div>
+        <div>
+          <button class="btn btn-outline btn-sm" id="btn-refresh-broadcast">🔄 Reload Config</button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+        <!-- Configuration Form -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Broadcast Settings</div>
+            <span class="badge badge-admin" id="broadcast-status-badge">Checking...</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+              <span style="font-weight: 700;">Announcement Active Status</span>
+              <input type="checkbox" id="broadcast-active" style="width: 22px; height: 22px; cursor: pointer;">
+            </label>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+              When checked (ON), students see the flyer upon opening the mobile app until they tap "Close".
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label>Campaign / Version ID <span style="font-weight: normal; color: var(--muted);">(Change this to re-show to users who previously closed it)</span></label>
+            <input type="text" id="broadcast-version" placeholder="e.g. v109_resit_update" value="v109_update">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label>Flyer Image URL <span style="font-weight: normal; color: var(--muted);">(Recommended: 1080×1920 or 1080×1440)</span></label>
+            <input type="url" id="broadcast-image-url" placeholder="https://.../my-flyer.png (Leave blank for Olodo branded gradient flyer)">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label>Title</label>
+            <input type="text" id="broadcast-title" placeholder="e.g. Exciting New Features in Olodo!">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label>Message / Description</label>
+            <textarea id="broadcast-message" rows="3" placeholder="Carry-Over courses, 8 new departments, and improved offline study are now live."></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label>Action Button Text <span style="font-weight: normal; color: var(--muted);">(Optional)</span></label>
+            <input type="text" id="broadcast-action-text" placeholder="e.g. Update Now on Google Play">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>Action Button URL <span style="font-weight: normal; color: var(--muted);">(e.g. Play Store Link)</span></label>
+            <input type="url" id="broadcast-action-url" placeholder="https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo" value="https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo">
+          </div>
+
+          <button class="btn btn-primary" id="btn-save-broadcast" style="width: 100%; font-weight: 800; padding: 14px;">
+            💾 Save & Publish Broadcast
+          </button>
+        </div>
+
+        <!-- Live Phone Preview -->
+        <div class="card" style="text-align: center;">
+          <div class="card-header">
+            <div class="card-title">📱 Live Mobile App Preview (Zenith Bank Proportions)</div>
+          </div>
+          <div style="display: flex; justify-content: center; padding: 20px 0;">
+            <div id="broadcast-preview-box" style="width: 270px; height: 480px; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 12px 32px rgba(0,0,0,0.6); background: #0F172A; display: flex; flex-direction: column; justify-content: flex-end; padding: 16px; border: 2px solid var(--border);">
+              <div id="preview-bg-image" style="position: absolute; top:0; left:0; right:0; bottom:0; background-size: cover; background-position: center; display: none;"></div>
+              <div id="preview-fallback-content" style="position: absolute; top: 20px; left: 16px; right: 16px; bottom: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                <div style="font-size: 38px; margin-bottom: 10px;">📢</div>
+                <div id="preview-title" style="font-weight: 800; font-size: 15px; color: #FFF; margin-bottom: 8px;">Exciting New Features!</div>
+                <div id="preview-desc" style="font-size: 11.5px; color: rgba(255,255,255,0.85); line-height: 1.4;">Carry-Over courses, 8 new departments, and improved offline study are now live.</div>
+              </div>
+              <div style="position: relative; z-index: 2; width: 100%;">
+                <button id="preview-action-btn" class="btn btn-primary btn-sm" style="width: 100%; border-radius: 24px; font-weight: 800; margin-bottom: 8px; font-size: 11.5px; display: none;">Update on Google Play</button>
+                <div style="background: #FFF; color: #1A202C; border-radius: 24px; padding: 8px; font-weight: 800; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">Close</div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); line-height: 1.5; padding: 0 12px;">
+            📐 <strong>Optimal Dimensions for Canva / Photoshop:</strong><br>
+            • <strong>1080 × 1920 px</strong> (Standard 9:16 Portrait)<br>
+            • <strong>1080 × 1440 px</strong> (Compact 3:4 Portrait)<br>
+            <em>Keep primary text and branding in the center to avoid overlap with the bottom Close button.</em>
+          </div>
+        </div>
       </div>
     </section>
 
