@@ -22,6 +22,12 @@ import {
   serverTimestamp,
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDvg1dvECrhDVjdR4aHlh8NoTuQzuBZFbo",
@@ -35,6 +41,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export {
@@ -52,5 +59,8 @@ export {
   query,
   where,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  ref,
+  uploadBytes,
+  getDownloadURL
 };

@@ -1574,9 +1574,42 @@
             <input type="text" id="broadcast-version" placeholder="e.g. v109_resit_update" value="v109_update">
           </div>
 
+          <!-- Flyer Image Upload with In-Browser Compression -->
           <div class="form-group" style="margin-bottom: 16px;">
-            <label>Flyer Image URL <span style="font-weight: normal; color: var(--muted);">(Recommended: 1080×1920 or 1080×1440)</span></label>
-            <input type="url" id="broadcast-image-url" placeholder="https://.../my-flyer.png (Leave blank for Olodo branded gradient flyer)">
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700;">Flyer Image</span>
+              <span style="font-size: 11px; color: var(--primary); font-weight: 600;">⚡ Auto-Compresses in Browser</span>
+            </label>
+            
+            <div id="broadcast-dropzone" style="border: 2px dashed var(--border); border-radius: 12px; padding: 18px 14px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: rgba(255,255,255,0.02);">
+              <div id="dropzone-idle">
+                <div style="font-size: 26px; margin-bottom: 4px;">🖼️</div>
+                <div style="font-weight: 700; font-size: 13px; color: var(--text);">Click or Drag & Drop Flyer Image Here</div>
+                <div style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">PNG, JPG, or WebP · Auto-scaled to 1080px & compressed under 250KB</div>
+              </div>
+              <div id="dropzone-busy" style="display: none;">
+                <div style="font-size: 24px; margin-bottom: 4px;">⏳</div>
+                <div id="dropzone-status-text" style="font-weight: 700; font-size: 13px; color: var(--primary);">Compressing image...</div>
+                <div id="dropzone-status-detail" style="font-size: 11px; color: var(--muted); margin-top: 4px;">Optimizing file for instant mobile delivery...</div>
+              </div>
+              <input type="file" id="broadcast-file-input" accept="image/*" style="display: none;">
+            </div>
+
+            <!-- Compression statistics indicator -->
+            <div id="broadcast-upload-stats" style="display: none; margin-top: 8px; font-size: 11.5px; background: rgba(16,185,129,0.12); color: #10B981; border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 6px 12px; justify-content: space-between; align-items: center;">
+              <span id="stats-text">✓ Compressed & Uploaded</span>
+              <button type="button" id="btn-remove-image" style="background: none; border: none; color: #EF4444; font-size: 12px; cursor: pointer; font-weight: 700;">✕ Remove</button>
+            </div>
+
+            <!-- Optional direct URL accordion -->
+            <div style="margin-top: 8px;">
+              <details style="font-size: 11.5px; color: var(--muted);">
+                <summary style="cursor: pointer; user-select: none;">Or paste image URL directly</summary>
+                <div style="margin-top: 6px;">
+                  <input type="url" id="broadcast-image-url" placeholder="https://.../my-flyer.webp" style="font-size: 12px; padding: 8px 10px;">
+                </div>
+              </details>
+            </div>
           </div>
 
           <div class="form-group" style="margin-bottom: 16px;">
@@ -1599,9 +1632,14 @@
             <input type="url" id="broadcast-action-url" placeholder="https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo" value="https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo">
           </div>
 
-          <button class="btn btn-primary" id="btn-save-broadcast" style="width: 100%; font-weight: 800; padding: 14px;">
-            💾 Save & Publish Broadcast
-          </button>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-outline" id="btn-clear-broadcast" type="button" style="flex: 1; border-color: rgba(239, 68, 68, 0.4); color: #EF4444; font-weight: 700; padding: 12px;">
+              🗑️ Clear Form
+            </button>
+            <button class="btn btn-primary" id="btn-save-broadcast" type="button" style="flex: 2; font-weight: 800; padding: 12px;">
+              💾 Save & Publish Broadcast
+            </button>
+          </div>
         </div>
 
         <!-- Live Phone Preview -->

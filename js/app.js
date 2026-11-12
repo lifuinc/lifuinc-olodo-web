@@ -3,6 +3,10 @@
 import {
   auth,
   db,
+  storage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
   googleProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -3497,6 +3501,65 @@ function exportVouchersToCsv(list, filename) {
 // ==========================================
 // 8. APP BROADCAST & FLYER MANAGER (ZENITH STYLE)
 // ==========================================
+/**
+ * Compresses an image file client-side using HTML5 Canvas.
+ * Scales down to max 1080px width, exports as WebP (or JPEG fallback) at ~82% quality.
+ */
+function compressImage(file, { maxWidth = 1080, quality = 0.82 } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith("image/")) {
+      return reject(new Error("Please select a valid image file."));
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read image file."));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Failed to decode image."));
+      img.onload = () => {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+
+        if (width > maxWidth) {
+          const ratio = maxWidth / width;
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const mime = "image/webp";
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              return reject(new Error("Failed to compress image."));
+            }
+            resolve({
+              blob,
+              originalSize: file.size,
+              compressedSize: blob.size,
+              width,
+              height,
+              mimeType: mime
+            });
+          },
+          mime,
+          quality
+        );
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function updateBroadcastLivePreview() {
   const active = $("#broadcast-active")?.checked ?? false;
   const imgUrl = ($("#broadcast-image-url")?.value || "").trim();
@@ -3557,6 +3620,15 @@ async function loadAdminBroadcastConfig() {
       if ($("#broadcast-message")) $("#broadcast-message").value = data.message || "";
       if ($("#broadcast-action-text")) $("#broadcast-action-text").value = data.actionText || "";
       if ($("#broadcast-action-url")) $("#broadcast-action-url").value = data.actionUrl || "https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo";
+
+      if (data.imageUrl && data.imageUrl.trim()) {
+        const statsPill = $("#broadcast-upload-stats");
+        const statsText = $("#stats-text");
+        if (statsPill && statsText) {
+          statsText.textContent = "✓ Current flyer image loaded";
+          statsPill.style.display = "flex";
+        }
+      }
     }
     updateBroadcastLivePreview();
   } catch (err) {
@@ -3599,9 +3671,127 @@ async function saveAdminBroadcastConfig() {
   }
 }
 
+async function handleFlyerFileUpload(file) {
+  if (!file) return;
+
+  const dropIdle = $("#dropzone-idle");
+  const dropBusy = $("#dropzone-busy");
+  const busyText = $("#dropzone-status-text");
+  const busyDetail = $("#dropzone-status-detail");
+  const statsPill = $("#broadcast-upload-stats");
+  const statsText = $("#stats-text");
+  const urlInput = $("#broadcast-image-url");
+
+  try {
+    if (dropIdle) dropIdle.style.display = "none";
+    if (dropBusy) dropBusy.style.display = "block";
+    if (busyText) busyText.textContent = "⚡ Compressing flyer in browser...";
+    if (busyDetail) busyDetail.textContent = `Processing original ${(file.size / 1024 / 1024).toFixed(2)} MB image...`;
+
+    // 1. Client-Side Compression
+    const compressed = await compressImage(file, { maxWidth: 1080, quality: 0.82 });
+
+    const origKb = Math.round(compressed.originalSize / 1024);
+    const compKb = Math.round(compressed.compressedSize / 1024);
+    const pct = Math.max(0, Math.round((1 - compressed.compressedSize / compressed.originalSize) * 100));
+
+    if (busyText) busyText.textContent = "☁️ Uploading to Firebase Storage...";
+    if (busyDetail) busyDetail.textContent = `Uploading optimized ${compKb} KB file (${pct}% reduced)...`;
+
+    // 2. Upload to Firebase Storage
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 30);
+    const storagePath = `announcements/flyer_${Date.now()}_${safeName}.webp`;
+    const storageRef = ref(storage, storagePath);
+
+    await uploadBytes(storageRef, compressed.blob, {
+      contentType: "image/webp",
+      cacheControl: "public, max-age=31536000"
+    });
+
+    const downloadUrl = await getDownloadURL(storageRef);
+
+    if (urlInput) {
+      urlInput.value = downloadUrl;
+    }
+
+    if (statsPill && statsText) {
+      statsText.textContent = `✓ Compressed: ${origKb}KB → ${compKb}KB (${pct}% smaller) · Uploaded!`;
+      statsPill.style.display = "flex";
+    }
+
+    updateBroadcastLivePreview();
+  } catch (err) {
+    console.error("Flyer compression/upload failed:", err);
+    alert("Flyer upload failed: " + err.message);
+  } finally {
+    if (dropIdle) dropIdle.style.display = "block";
+    if (dropBusy) dropBusy.style.display = "none";
+  }
+}
+
 function initAdminBroadcast() {
   $("#btn-save-broadcast")?.addEventListener("click", saveAdminBroadcastConfig);
   $("#btn-refresh-broadcast")?.addEventListener("click", loadAdminBroadcastConfig);
+
+  // Drag and Drop Flyer Upload Box
+  const dropzone = $("#broadcast-dropzone");
+  const fileInput = $("#broadcast-file-input");
+
+  if (dropzone && fileInput) {
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = "var(--primary)";
+      dropzone.style.background = "rgba(59, 130, 246, 0.08)";
+    });
+
+    ["dragleave", "dragend"].forEach((evt) => {
+      dropzone.addEventListener(evt, () => {
+        dropzone.style.borderColor = "var(--border)";
+        dropzone.style.background = "rgba(255,255,255,0.02)";
+      });
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = "var(--border)";
+      dropzone.style.background = "rgba(255,255,255,0.02)";
+      if (e.dataTransfer?.files?.length) {
+        handleFlyerFileUpload(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files?.length) {
+        handleFlyerFileUpload(e.target.files[0]);
+      }
+    });
+  }
+
+  // Remove Uploaded Image
+  $("#btn-remove-image")?.addEventListener("click", () => {
+    if ($("#broadcast-image-url")) $("#broadcast-image-url").value = "";
+    if ($("#broadcast-file-input")) $("#broadcast-file-input").value = "";
+    const stats = $("#broadcast-upload-stats");
+    if (stats) stats.style.display = "none";
+    updateBroadcastLivePreview();
+  });
+
+  // Clear / Reset Form
+  $("#btn-clear-broadcast")?.addEventListener("click", () => {
+    if (!confirm("Are you sure you want to clear this announcement form?")) return;
+    if ($("#broadcast-active")) $("#broadcast-active").checked = false;
+    if ($("#broadcast-image-url")) $("#broadcast-image-url").value = "";
+    if ($("#broadcast-file-input")) $("#broadcast-file-input").value = "";
+    if ($("#broadcast-title")) $("#broadcast-title").value = "";
+    if ($("#broadcast-message")) $("#broadcast-message").value = "";
+    if ($("#broadcast-action-text")) $("#broadcast-action-text").value = "";
+    if ($("#broadcast-version")) $("#broadcast-version").value = "v" + Date.now().toString().slice(-6);
+    const stats = $("#broadcast-upload-stats");
+    if (stats) stats.style.display = "none";
+    updateBroadcastLivePreview();
+  });
 
   ["broadcast-active", "broadcast-image-url", "broadcast-title", "broadcast-message", "broadcast-action-text"].forEach((id) => {
     $(`#${id}`)?.addEventListener("input", updateBroadcastLivePreview);
