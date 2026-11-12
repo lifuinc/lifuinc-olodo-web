@@ -14,12 +14,15 @@ import {
   collection, 
   doc, 
   setDoc, 
+  addDoc,
   getDoc, 
   getDocs, 
   deleteDoc,
   query, 
   where, 
+  orderBy,
   serverTimestamp,
+  increment,
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
@@ -60,6 +63,9 @@ export {
   where,
   serverTimestamp,
   onSnapshot,
+  addDoc,
+  orderBy,
+  increment,
   ref,
   uploadBytes,
   getDownloadURL

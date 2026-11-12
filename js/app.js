@@ -16,12 +16,16 @@ import {
   collection,
   doc,
   setDoc,
+  addDoc,
   getDoc,
   getDocs,
   deleteDoc,
   query,
   where,
-  serverTimestamp
+  orderBy,
+  serverTimestamp,
+  increment,
+  onSnapshot
 } from "./firebase-config.js";
 
 import { parseQuestionBank } from "./parser.js";
@@ -2452,7 +2456,8 @@ async function loadAdminData() {
     loadAdminFinancials(),
     loadAdminAnalytics(),
     loadAdminVouchers(),
-    loadAdminBroadcastConfig()
+    loadAdminBroadcastConfig(),
+    loadAdminSupportThreads()
   ]);
 }
 
@@ -3800,6 +3805,288 @@ function initAdminBroadcast() {
 }
 
 // ==========================================
+// 9. STUDENT LIVE SUPPORT DESK (REAL-TIME ENGINE)
+// ==========================================
+let allSupportThreads = [];
+let activeSupportStudentUid = null;
+let unsubscribeSupportMessages = null;
+let unsubscribeSupportThreads = null;
+
+function formatSupportTime(ts) {
+  if (!ts) return "";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const now = new Date();
+  const diffHours = (now - d) / (1000 * 60 * 60);
+
+  if (diffHours < 24 && d.getDate() === now.getDate()) {
+    const hour = d.getHours() % 12 || 12;
+    const min = d.getMinutes().toString().padStart(2, "0");
+    const ampm = d.getHours() >= 12 ? "PM" : "AM";
+    return `${hour}:${min} ${ampm}`;
+  }
+  return d.toLocaleDateString();
+}
+
+function loadAdminSupportThreads() {
+  if (unsubscribeSupportThreads) unsubscribeSupportThreads();
+
+  try {
+    const q = query(collection(db, "support_threads"), orderBy("lastTimestamp", "desc"));
+    unsubscribeSupportThreads = onSnapshot(q, (snapshot) => {
+      allSupportThreads = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data()
+      }));
+
+      // Calculate total unread by admin
+      let totalUnread = 0;
+      allSupportThreads.forEach((t) => {
+        totalUnread += Number(t.unreadByAdmin || 0);
+      });
+
+      const navBadge = $("#support-unread-nav-badge");
+      if (navBadge) {
+        if (totalUnread > 0) {
+          navBadge.textContent = totalUnread > 99 ? "99+" : totalUnread;
+          navBadge.style.display = "inline-block";
+        } else {
+          navBadge.style.display = "none";
+        }
+      }
+
+      renderSupportThreadsList();
+    });
+  } catch (err) {
+    console.warn("Error setting up support threads listener:", err);
+  }
+}
+
+function renderSupportThreadsList() {
+  const container = $("#support-threads-list");
+  const countBadge = $("#support-threads-count");
+  if (!container) return;
+
+  if (countBadge) {
+    countBadge.textContent = `${allSupportThreads.length} Student${allSupportThreads.length === 1 ? "" : "s"}`;
+  }
+
+  if (allSupportThreads.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--muted); padding: 40px 16px; font-size: 13px;">
+        <div style="font-size: 32px; margin-bottom: 8px;">📭</div>
+        No student inquiries yet.<br>When students message in the mobile app, their chats appear here.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = allSupportThreads
+    .map((t) => {
+      const isSelected = t.id === activeSupportStudentUid;
+      const unreadCount = Number(t.unreadByAdmin || 0);
+      const name = t.studentName || t.studentEmail?.split("@")[0] || "Student";
+      const initial = (name.charAt(0) || "S").toUpperCase();
+      const timeStr = formatSupportTime(t.lastTimestamp);
+      const lastMsg = t.lastMessage || "Started a conversation";
+
+      return `
+        <div class="support-thread-item" data-uid="${t.id}" style="padding: 12px 14px; border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: all 0.15s ease; background: ${
+          isSelected ? "rgba(59, 130, 246, 0.15)" : unreadCount > 0 ? "rgba(255,255,255,0.06)" : "transparent"
+        }; border: 1px solid ${isSelected ? "var(--primary)" : "transparent"};">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: ${
+                unreadCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.15)"
+              }; color: #FFF; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                ${initial}
+              </div>
+              <div style="font-weight: ${unreadCount > 0 ? "800" : "600"}; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${name}
+              </div>
+            </div>
+            <div style="font-size: 10.5px; color: ${unreadCount > 0 ? "var(--primary)" : "var(--muted)"}; flex-shrink: 0;">
+              ${timeStr}
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div style="font-size: 11.5px; color: ${unreadCount > 0 ? "var(--text)" : "var(--muted)"}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
+              ${t.lastSender === "admin" ? "<strong>You:</strong> " : ""}${lastMsg}
+            </div>
+            ${
+              unreadCount > 0
+                ? `<span class="badge badge-danger" style="padding: 2px 6px; font-size: 10px; font-weight: 800; border-radius: 10px;">${unreadCount}</span>`
+                : ""
+            }
+          </div>
+
+          ${
+            t.academicProfile
+              ? `<div style="font-size: 10px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎓 ${t.academicProfile}</div>`
+              : ""
+          }
+        </div>
+      `;
+    })
+    .join("");
+
+  container.querySelectorAll(".support-thread-item").forEach((el) => {
+    el.addEventListener("click", () => {
+      const uid = el.getAttribute("data-uid");
+      if (uid) selectSupportThread(uid);
+    });
+  });
+}
+
+function selectSupportThread(studentUid) {
+  activeSupportStudentUid = studentUid;
+  const thread = allSupportThreads.find((t) => t.id === studentUid);
+  if (!thread) return;
+
+  renderSupportThreadsList();
+
+  const name = thread.studentName || thread.studentEmail?.split("@")[0] || "Student";
+  const initial = (name.charAt(0) || "S").toUpperCase();
+  if ($("#support-chat-avatar")) $("#support-chat-avatar").textContent = initial;
+  if ($("#support-chat-name")) $("#support-chat-name").textContent = name;
+  if ($("#support-chat-meta")) {
+    $("#support-chat-meta").textContent = `${thread.studentEmail || "No Email"} · ${thread.academicProfile || "Student"}`;
+  }
+
+  const input = $("#support-reply-input");
+  const sendBtn = $("#btn-send-support-reply");
+  if (input) {
+    input.disabled = false;
+    input.placeholder = `Reply to ${name}...`;
+    input.focus();
+  }
+  if (sendBtn) sendBtn.disabled = false;
+
+  if (thread.unreadByAdmin > 0) {
+    setDoc(doc(db, "support_threads", studentUid), { unreadByAdmin: 0 }, { merge: true }).catch(() => {});
+  }
+
+  if (unsubscribeSupportMessages) unsubscribeSupportMessages();
+
+  const messagesBox = $("#support-messages-stream");
+  if (messagesBox) {
+    messagesBox.innerHTML = `
+      <div style="margin: auto; text-align: center; color: var(--muted); font-size: 12px;">
+        Loading message history...
+      </div>
+    `;
+  }
+
+  try {
+    const msgsQuery = query(
+      collection(db, "support_threads", studentUid, "messages"),
+      orderBy("timestamp", "asc")
+    );
+    unsubscribeSupportMessages = onSnapshot(msgsQuery, (snapshot) => {
+      const msgs = snapshot.docs.map((d) => d.data());
+      renderSupportMessages(msgs);
+    });
+  } catch (err) {
+    console.error("Error listening to support messages:", err);
+  }
+}
+
+function renderSupportMessages(messages) {
+  const container = $("#support-messages-stream");
+  if (!container) return;
+
+  if (messages.length === 0) {
+    container.innerHTML = `
+      <div style="margin: auto; text-align: center; color: var(--muted); font-size: 13px;">
+        No messages in this conversation yet. Send the first reply below!
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = messages
+    .map((m) => {
+      const isAdmin = m.sender === "admin";
+      const timeStr = formatSupportTime(m.timestamp);
+
+      if (isAdmin) {
+        return `
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+            <div style="max-width: 75%; background: linear-gradient(135deg, #0284C7, #0EA5E9); color: #FFF; padding: 10px 14px; border-radius: 16px 4px 16px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+              <div style="font-size: 11px; font-weight: 800; opacity: 0.9; margin-bottom: 2px;">🛡️ You (Olodo Team)</div>
+              <div style="font-size: 13.5px; line-height: 1.4; word-break: break-word;">${m.text || ""}</div>
+              <div style="font-size: 10px; opacity: 0.75; text-align: right; margin-top: 4px;">${timeStr}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
+            <div style="max-width: 75%; background: var(--card-bg, #1E293B); color: var(--text, #FFF); border: 1px solid var(--border); padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+              <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 2px;">${m.senderName || "Student"}</div>
+              <div style="font-size: 13.5px; line-height: 1.4; word-break: break-word;">${m.text || ""}</div>
+              <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">${timeStr}</div>
+            </div>
+          </div>
+        `;
+      }
+    })
+    .join("");
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendAdminSupportReply(e) {
+  if (e) e.preventDefault();
+  if (!activeSupportStudentUid) return;
+
+  const input = $("#support-reply-input");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+
+  input.value = "";
+  const sendBtn = $("#btn-send-support-reply");
+  if (sendBtn) sendBtn.disabled = true;
+
+  try {
+    const threadRef = doc(db, "support_threads", activeSupportStudentUid);
+    const messagesCol = collection(db, "support_threads", activeSupportStudentUid, "messages");
+
+    await addDoc(messagesCol, {
+      text,
+      sender: "admin",
+      senderName: "Olodo Team",
+      timestamp: serverTimestamp(),
+      read: false
+    });
+
+    await setDoc(
+      threadRef,
+      {
+        lastMessage: text,
+        lastSender: "admin",
+        lastTimestamp: serverTimestamp(),
+        unreadByStudent: increment(1),
+        unreadByAdmin: 0,
+        status: "open"
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.error("Failed to send support reply:", err);
+    alert("Failed to send reply: " + err.message);
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+    input?.focus();
+  }
+}
+
+function initAdminSupport() {
+  $("#support-reply-form")?.addEventListener("submit", sendAdminSupportReply);
+  $("#btn-refresh-support")?.addEventListener("click", () => loadAdminSupportThreads());
+}
+
+// ==========================================
 // INITIALIZATION
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
@@ -3820,6 +4107,7 @@ document.addEventListener("DOMContentLoaded", () => {
   safeInit(initShareDeptListeners);
   safeInit(initVoucherEngine);
   safeInit(initAdminBroadcast);
+  safeInit(initAdminSupport);
   $("#btn-admin-refresh-vetting")?.addEventListener("click", () => loadAdminVettingQueue());
   $("#btn-refresh-courses")?.addEventListener("click", () => loadCoursesFromFirestore());
   $("#btn-refresh-analytics")?.addEventListener("click", () => loadAdminAnalytics());
