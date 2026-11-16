@@ -1,4 +1,7 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "storage": {
     "rules": "storage.rules"
   },
@@ -7,6 +10,8 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      "firestore.rules",
+      "storage.rules",
       "**/.*",
       "server.ps1",
       "run_portal.bat",

@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Publicly readable collections for mobile app students (including guest/offline-auth sessions)
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /course_catalogues/{cohortId} {
+      allow read, write: if true;
+    }
+
+    match /app_config/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Student Live Support Chat threads & messages
+    match /support_threads/{threadId} {
+      allow read, write: if true;
+      match /messages/{messageId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Student passes, vouchers, profiles, and device binding
+    match /institutional_pins/{pinId} {
+      allow read, write: if true;
+    }
+
+    match /purchases/{purchaseId} {
+      allow read, write: if true;
+    }
+
+    match /user_devices/{email} {
+      allow read, write: if true;
+    }
+
+    match /student_profiles/{email} {
+      allow read, write: if true;
+    }
+
+    // Educator & Admin collections
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

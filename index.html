@@ -1629,11 +1629,22 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 16px;">
-            <label>Action Button Text <span style="font-weight: normal; color: var(--muted);">(Optional)</span></label>
-            <input type="text" id="broadcast-action-text" placeholder="e.g. Update Now on Google Play">
+            <label>Action Button Mode</label>
+            <select id="broadcast-action-type" style="width: 100%; padding: 10px 12px; border-radius: 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-weight: 600;">
+              <option value="url">🔗 Open External Link (e.g. Google Play Store Update)</option>
+              <option value="claim_free_30_days">🎁 Activate 30 Days Free Access (Onboarding Promo)</option>
+            </select>
+            <div style="font-size: 11.5px; color: var(--muted); margin-top: 4px;" id="broadcast-action-mode-hint">
+              Choose whether the action button opens a web link or grants 30 days of free access to all courses.
+            </div>
           </div>
 
-          <div class="form-group" style="margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label>Action Button Text <span style="font-weight: normal; color: var(--muted);">(e.g. Activate 30 Days Free / Update Now)</span></label>
+            <input type="text" id="broadcast-action-text" placeholder="e.g. 🎉 Activate 30 Days Free">
+          </div>
+
+          <div class="form-group" id="broadcast-action-url-group" style="margin-bottom: 20px;">
             <label>Action Button URL <span style="font-weight: normal; color: var(--muted);">(e.g. Play Store Link)</span></label>
             <input type="url" id="broadcast-action-url" placeholder="https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo" value="https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo">
           </div>
@@ -1756,6 +1767,6 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script type="module" src="js/app.js?v=20261109v8"></script>
+  <script type="module" src="js/app.js?v=20261116v2"></script>
 </body>
 </html>

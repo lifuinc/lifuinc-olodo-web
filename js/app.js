@@ -26,7 +26,7 @@ import {
   serverTimestamp,
   increment,
   onSnapshot
-} from "./firebase-config.js";
+} from "./firebase-config.js?v=20261116v1";
 
 import { parseQuestionBank } from "./parser.js";
 import { AIGenerator } from "./ai-generator.js";
@@ -3570,7 +3570,15 @@ function updateBroadcastLivePreview() {
   const imgUrl = ($("#broadcast-image-url")?.value || "").trim();
   const title = ($("#broadcast-title")?.value || "").trim() || "Announcement";
   const desc = ($("#broadcast-message")?.value || "").trim();
-  const actionText = ($("#broadcast-action-text")?.value || "").trim();
+  const actionType = $("#broadcast-action-type")?.value || "url";
+  const isPromo = actionType === "claim_free_30_days";
+  const rawActionText = ($("#broadcast-action-text")?.value || "").trim();
+  const actionText = rawActionText || (isPromo ? "🎉 Activate 30 Days Free" : "");
+
+  const urlGroup = $("#broadcast-action-url-group");
+  if (urlGroup) {
+    urlGroup.style.display = isPromo ? "none" : "block";
+  }
 
   const bgImg = $("#preview-bg-image");
   const fallback = $("#preview-fallback-content");
@@ -3582,7 +3590,7 @@ function updateBroadcastLivePreview() {
   if (statusBadge) {
     if (active) {
       statusBadge.className = "badge badge-success";
-      statusBadge.textContent = "🟢 Live on Mobile";
+      statusBadge.textContent = isPromo ? "🟢 Live (30-Day Promo)" : "🟢 Live on Mobile";
     } else {
       statusBadge.className = "badge badge-danger";
       statusBadge.textContent = "⚪ Inactive / Hidden";
@@ -3623,6 +3631,12 @@ async function loadAdminBroadcastConfig() {
       if ($("#broadcast-image-url")) $("#broadcast-image-url").value = data.imageUrl || "";
       if ($("#broadcast-title")) $("#broadcast-title").value = data.title || "";
       if ($("#broadcast-message")) $("#broadcast-message").value = data.message || "";
+      if ($("#broadcast-action-type")) {
+        $("#broadcast-action-type").value =
+          data.actionType === "claim_free_30_days" || data.grantFree30Days === true
+            ? "claim_free_30_days"
+            : "url";
+      }
       if ($("#broadcast-action-text")) $("#broadcast-action-text").value = data.actionText || "";
       if ($("#broadcast-action-url")) $("#broadcast-action-url").value = data.actionUrl || "https://play.google.com/store/apps/details?id=com.brain_squard_studio.olodo";
 
@@ -3650,13 +3664,19 @@ async function saveAdminBroadcastConfig() {
       saveBtn.innerHTML = "⏳ Saving to Cloud...";
     }
 
+    const actionType = $("#broadcast-action-type")?.value || "url";
+    const isPromo = actionType === "claim_free_30_days";
+    const rawActionText = ($("#broadcast-action-text")?.value || "").trim();
+
     const payload = {
       active: $("#broadcast-active")?.checked ?? false,
       version: ($("#broadcast-version")?.value || "").trim() || "v1",
       imageUrl: ($("#broadcast-image-url")?.value || "").trim(),
       title: ($("#broadcast-title")?.value || "").trim() || "Announcement",
       message: ($("#broadcast-message")?.value || "").trim(),
-      actionText: ($("#broadcast-action-text")?.value || "").trim(),
+      actionType,
+      grantFree30Days: isPromo,
+      actionText: rawActionText || (isPromo ? "🎉 Activate 30 Days Free" : ""),
       actionUrl: ($("#broadcast-action-url")?.value || "").trim(),
       updatedAt: serverTimestamp(),
       updatedBy: currentUser?.email || "admin"
@@ -3791,6 +3811,7 @@ function initAdminBroadcast() {
     if ($("#broadcast-file-input")) $("#broadcast-file-input").value = "";
     if ($("#broadcast-title")) $("#broadcast-title").value = "";
     if ($("#broadcast-message")) $("#broadcast-message").value = "";
+    if ($("#broadcast-action-type")) $("#broadcast-action-type").value = "url";
     if ($("#broadcast-action-text")) $("#broadcast-action-text").value = "";
     if ($("#broadcast-version")) $("#broadcast-version").value = "v" + Date.now().toString().slice(-6);
     const stats = $("#broadcast-upload-stats");
@@ -3798,7 +3819,7 @@ function initAdminBroadcast() {
     updateBroadcastLivePreview();
   });
 
-  ["broadcast-active", "broadcast-image-url", "broadcast-title", "broadcast-message", "broadcast-action-text"].forEach((id) => {
+  ["broadcast-active", "broadcast-image-url", "broadcast-title", "broadcast-message", "broadcast-action-type", "broadcast-action-text"].forEach((id) => {
     $(`#${id}`)?.addEventListener("input", updateBroadcastLivePreview);
     $(`#${id}`)?.addEventListener("change", updateBroadcastLivePreview);
   });
@@ -3831,31 +3852,45 @@ function loadAdminSupportThreads() {
   if (unsubscribeSupportThreads) unsubscribeSupportThreads();
 
   try {
-    const q = query(collection(db, "support_threads"), orderBy("lastTimestamp", "desc"));
-    unsubscribeSupportThreads = onSnapshot(q, (snapshot) => {
-      allSupportThreads = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data()
-      }));
+    const colRef = collection(db, "support_threads");
+    unsubscribeSupportThreads = onSnapshot(
+      colRef,
+      (snapshot) => {
+        allSupportThreads = snapshot.docs
+          .map((d) => ({
+            id: d.id,
+            ...d.data()
+          }))
+          .filter((t) => Boolean(t.lastMessage || t.studentName || t.studentEmail));
 
-      // Calculate total unread by admin
-      let totalUnread = 0;
-      allSupportThreads.forEach((t) => {
-        totalUnread += Number(t.unreadByAdmin || 0);
-      });
+        allSupportThreads.sort((a, b) => {
+          const ta = a.lastTimestamp?.seconds || (a.lastUpdatedIso ? Date.parse(a.lastUpdatedIso) / 1000 : 0);
+          const tb = b.lastTimestamp?.seconds || (b.lastUpdatedIso ? Date.parse(b.lastUpdatedIso) / 1000 : 0);
+          return tb - ta;
+        });
 
-      const navBadge = $("#support-unread-nav-badge");
-      if (navBadge) {
-        if (totalUnread > 0) {
-          navBadge.textContent = totalUnread > 99 ? "99+" : totalUnread;
-          navBadge.style.display = "inline-block";
-        } else {
-          navBadge.style.display = "none";
+        // Calculate total unread by admin
+        let totalUnread = 0;
+        allSupportThreads.forEach((t) => {
+          totalUnread += Number(t.unreadByAdmin || 0);
+        });
+
+        const navBadge = $("#support-unread-nav-badge");
+        if (navBadge) {
+          if (totalUnread > 0) {
+            navBadge.textContent = totalUnread > 99 ? "99+" : totalUnread;
+            navBadge.style.display = "inline-block";
+          } else {
+            navBadge.style.display = "none";
+          }
         }
-      }
 
-      renderSupportThreadsList();
-    });
+        renderSupportThreadsList();
+      },
+      (err) => {
+        console.warn("Support threads listener error:", err);
+      }
+    );
   } catch (err) {
     console.warn("Error setting up support threads listener:", err);
   }
@@ -4084,6 +4119,13 @@ async function sendAdminSupportReply(e) {
 function initAdminSupport() {
   $("#support-reply-form")?.addEventListener("submit", sendAdminSupportReply);
   $("#btn-refresh-support")?.addEventListener("click", () => loadAdminSupportThreads());
+  $('[data-tab="tab-admin-support"]')?.addEventListener("click", () => {
+    if (!unsubscribeSupportThreads) {
+      loadAdminSupportThreads();
+    } else {
+      renderSupportThreadsList();
+    }
+  });
 }
 
 // ==========================================
