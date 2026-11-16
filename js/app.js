@@ -3832,10 +3832,21 @@ let allSupportThreads = [];
 let activeSupportStudentUid = null;
 let unsubscribeSupportMessages = null;
 let unsubscribeSupportThreads = null;
+let isSendingSupportReply = false;
+
+function escapeSupportHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function formatSupportTime(ts) {
   if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
+  if (isNaN(d.getTime())) return "";
   const now = new Date();
   const diffHours = (now - d) / (1000 * 60 * 60);
 
@@ -3885,7 +3896,14 @@ function loadAdminSupportThreads() {
           }
         }
 
-        renderSupportThreadsList();
+        // Auto-select the latest student thread if none is selected yet
+        const hasValidSelection =
+          activeSupportStudentUid && allSupportThreads.some((t) => t.id === activeSupportStudentUid);
+        if (!hasValidSelection && allSupportThreads.length > 0) {
+          selectSupportThread(allSupportThreads[0].id, false);
+        } else {
+          renderSupportThreadsList();
+        }
       },
       (err) => {
         console.warn("Support threads listener error:", err);
@@ -3919,13 +3937,14 @@ function renderSupportThreadsList() {
     .map((t) => {
       const isSelected = t.id === activeSupportStudentUid;
       const unreadCount = Number(t.unreadByAdmin || 0);
-      const name = t.studentName || t.studentEmail?.split("@")[0] || "Student";
-      const initial = (name.charAt(0) || "S").toUpperCase();
-      const timeStr = formatSupportTime(t.lastTimestamp);
-      const lastMsg = t.lastMessage || "Started a conversation";
+      const name = escapeSupportHtml(t.studentName || t.studentEmail?.split("@")[0] || "Student");
+      const initial = escapeSupportHtml(((t.studentName || t.studentEmail || "S").charAt(0) || "S").toUpperCase());
+      const timeStr = formatSupportTime(t.lastTimestamp || t.lastUpdatedIso);
+      const lastMsg = escapeSupportHtml(t.lastMessage || "Started a conversation");
+      const profileStr = t.academicProfile ? escapeSupportHtml(t.academicProfile) : "";
 
       return `
-        <div class="support-thread-item" data-uid="${t.id}" style="padding: 12px 14px; border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: all 0.15s ease; background: ${
+        <div class="support-thread-item" data-uid="${escapeSupportHtml(t.id)}" style="padding: 12px 14px; border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: all 0.15s ease; background: ${
           isSelected ? "rgba(59, 130, 246, 0.15)" : unreadCount > 0 ? "rgba(255,255,255,0.06)" : "transparent"
         }; border: 1px solid ${isSelected ? "var(--primary)" : "transparent"};">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
@@ -3956,8 +3975,8 @@ function renderSupportThreadsList() {
           </div>
 
           ${
-            t.academicProfile
-              ? `<div style="font-size: 10px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎓 ${t.academicProfile}</div>`
+            profileStr
+              ? `<div style="font-size: 10px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎓 ${profileStr}</div>`
               : ""
           }
         </div>
@@ -3968,12 +3987,12 @@ function renderSupportThreadsList() {
   container.querySelectorAll(".support-thread-item").forEach((el) => {
     el.addEventListener("click", () => {
       const uid = el.getAttribute("data-uid");
-      if (uid) selectSupportThread(uid);
+      if (uid) selectSupportThread(uid, true);
     });
   });
 }
 
-function selectSupportThread(studentUid) {
+function selectSupportThread(studentUid, focusInput = true) {
   activeSupportStudentUid = studentUid;
   const thread = allSupportThreads.find((t) => t.id === studentUid);
   if (!thread) return;
@@ -3992,10 +4011,19 @@ function selectSupportThread(studentUid) {
   const sendBtn = $("#btn-send-support-reply");
   if (input) {
     input.disabled = false;
+    input.removeAttribute("disabled");
     input.placeholder = `Reply to ${name}...`;
-    input.focus();
+    if (focusInput) {
+      if (window.innerWidth <= 820) {
+        $("#support-chat-card")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      input.focus();
+    }
   }
-  if (sendBtn) sendBtn.disabled = false;
+  if (sendBtn) {
+    sendBtn.disabled = false;
+    sendBtn.removeAttribute("disabled");
+  }
 
   if (thread.unreadByAdmin > 0) {
     setDoc(doc(db, "support_threads", studentUid), { unreadByAdmin: 0 }, { merge: true }).catch(() => {});
@@ -4013,14 +4041,25 @@ function selectSupportThread(studentUid) {
   }
 
   try {
-    const msgsQuery = query(
-      collection(db, "support_threads", studentUid, "messages"),
-      orderBy("timestamp", "asc")
+    const msgsCol = collection(db, "support_threads", studentUid, "messages");
+    unsubscribeSupportMessages = onSnapshot(
+      msgsCol,
+      (snapshot) => {
+        const msgs = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data()
+        }));
+        msgs.sort((a, b) => {
+          const ta = Number(a.createdAtMs || (a.timestamp?.seconds ? a.timestamp.seconds * 1000 : 0));
+          const tb = Number(b.createdAtMs || (b.timestamp?.seconds ? b.timestamp.seconds * 1000 : 0));
+          return ta - tb;
+        });
+        renderSupportMessages(msgs);
+      },
+      (err) => {
+        console.error("Support messages listener error:", err);
+      }
     );
-    unsubscribeSupportMessages = onSnapshot(msgsQuery, (snapshot) => {
-      const msgs = snapshot.docs.map((d) => d.data());
-      renderSupportMessages(msgs);
-    });
   } catch (err) {
     console.error("Error listening to support messages:", err);
   }
@@ -4042,14 +4081,16 @@ function renderSupportMessages(messages) {
   container.innerHTML = messages
     .map((m) => {
       const isAdmin = m.sender === "admin";
-      const timeStr = formatSupportTime(m.timestamp);
+      const timeStr = formatSupportTime(m.timestamp || m.createdAtMs);
+      const safeText = escapeSupportHtml(m.text || "").replace(/\n/g, "<br>");
+      const safeSender = escapeSupportHtml(m.senderName || "Student");
 
       if (isAdmin) {
         return `
           <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
             <div style="max-width: 75%; background: linear-gradient(135deg, #0284C7, #0EA5E9); color: #FFF; padding: 10px 14px; border-radius: 16px 4px 16px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
               <div style="font-size: 11px; font-weight: 800; opacity: 0.9; margin-bottom: 2px;">🛡️ You (Olodo Team)</div>
-              <div style="font-size: 13.5px; line-height: 1.4; word-break: break-word;">${m.text || ""}</div>
+              <div style="font-size: 13.5px; line-height: 1.4; word-break: break-word;">${safeText}</div>
               <div style="font-size: 10px; opacity: 0.75; text-align: right; margin-top: 4px;">${timeStr}</div>
             </div>
           </div>
@@ -4058,8 +4099,8 @@ function renderSupportMessages(messages) {
         return `
           <div style="display: flex; justify-content: flex-start; margin-bottom: 8px;">
             <div style="max-width: 75%; background: var(--card-bg, #1E293B); color: var(--text, #FFF); border: 1px solid var(--border); padding: 10px 14px; border-radius: 4px 16px 16px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-              <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 2px;">${m.senderName || "Student"}</div>
-              <div style="font-size: 13.5px; line-height: 1.4; word-break: break-word;">${m.text || ""}</div>
+              <div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 2px;">${safeSender}</div>
+              <div style="font-size: 13.5px; line-height: 1.4; word-break: break-word;">${safeText}</div>
               <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">${timeStr}</div>
             </div>
           </div>
@@ -4073,15 +4114,24 @@ function renderSupportMessages(messages) {
 
 async function sendAdminSupportReply(e) {
   if (e) e.preventDefault();
+  if (isSendingSupportReply) return;
+
+  if (!activeSupportStudentUid && allSupportThreads.length > 0) {
+    activeSupportStudentUid = allSupportThreads[0].id;
+  }
   if (!activeSupportStudentUid) return;
 
   const input = $("#support-reply-input");
   const text = (input?.value || "").trim();
   if (!text) return;
 
+  isSendingSupportReply = true;
   input.value = "";
   const sendBtn = $("#btn-send-support-reply");
   if (sendBtn) sendBtn.disabled = true;
+
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
 
   try {
     const threadRef = doc(db, "support_threads", activeSupportStudentUid);
@@ -4092,6 +4142,7 @@ async function sendAdminSupportReply(e) {
       sender: "admin",
       senderName: "Olodo Team",
       timestamp: serverTimestamp(),
+      createdAtMs: nowMs,
       read: false
     });
 
@@ -4101,6 +4152,7 @@ async function sendAdminSupportReply(e) {
         lastMessage: text,
         lastSender: "admin",
         lastTimestamp: serverTimestamp(),
+        lastUpdatedIso: nowIso,
         unreadByStudent: increment(1),
         unreadByAdmin: 0,
         status: "open"
@@ -4109,8 +4161,10 @@ async function sendAdminSupportReply(e) {
     );
   } catch (err) {
     console.error("Failed to send support reply:", err);
+    if (input && !input.value) input.value = text;
     alert("Failed to send reply: " + err.message);
   } finally {
+    isSendingSupportReply = false;
     if (sendBtn) sendBtn.disabled = false;
     input?.focus();
   }
@@ -4118,10 +4172,13 @@ async function sendAdminSupportReply(e) {
 
 function initAdminSupport() {
   $("#support-reply-form")?.addEventListener("submit", sendAdminSupportReply);
+  $("#btn-send-support-reply")?.addEventListener("click", sendAdminSupportReply);
   $("#btn-refresh-support")?.addEventListener("click", () => loadAdminSupportThreads());
   $('[data-tab="tab-admin-support"]')?.addEventListener("click", () => {
     if (!unsubscribeSupportThreads) {
       loadAdminSupportThreads();
+    } else if (!activeSupportStudentUid && allSupportThreads.length > 0) {
+      selectSupportThread(allSupportThreads[0].id, false);
     } else {
       renderSupportThreadsList();
     }
